@@ -1,0 +1,6 @@
+{
+  "folder_mappings": {
+    "Never Search Alone": "/path/to/obsidian/vault/Never Search Alone/Meeting Notes"
+  },
+  "default_destination": "/path/to/obsidian/vault/Clippings"
+}

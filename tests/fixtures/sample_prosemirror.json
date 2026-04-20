@@ -1,0 +1,416 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000001",
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Meeting Notes"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000002"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a plain paragraph with no marks applied."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000003"
+      }
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000004",
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Key Discussion Points"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000005"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "The team discussed "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "three critical items"
+        },
+        {
+          "type": "text",
+          "text": " during the meeting, including the "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "italic"
+            }
+          ],
+          "text": "revised deployment schedule"
+        },
+        {
+          "type": "text",
+          "text": " and a link to the "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "link",
+              "attrs": {
+                "href": "https://example.com/project-plan",
+                "target": "_blank",
+                "rel": "noopener nofollow",
+                "class": "external-link"
+              }
+            }
+          ],
+          "text": "project plan"
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000006",
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "Action Items"
+        }
+      ]
+    },
+    {
+      "type": "bulletList",
+      "attrs": {
+        "tight": true
+      },
+      "content": [
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000007"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000008"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Alice to send the updated proposal by Friday"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000009"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000010"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Bob to review the integration specs"
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "attrs": {
+                "tight": true
+              },
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "id": "10000000-0000-0000-0000-000000000011"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "id": "10000000-0000-0000-0000-000000000012"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Specifically the authentication flow"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "id": "10000000-0000-0000-0000-000000000013"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "id": "10000000-0000-0000-0000-000000000014"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And the rate limiting configuration"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000015"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000016"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Carol to schedule the follow-up meeting"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000017"
+      }
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000018",
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Priority Order"
+        }
+      ]
+    },
+    {
+      "type": "orderedList",
+      "attrs": {
+        "tight": true,
+        "start": 1,
+        "type": null
+      },
+      "content": [
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000019"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000020"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Complete the security audit"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000021"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000022"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Migrate the staging environment"
+                }
+              ]
+            },
+            {
+              "type": "orderedList",
+              "attrs": {
+                "tight": true,
+                "start": 1,
+                "type": null
+              },
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "id": "10000000-0000-0000-0000-000000000023"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "id": "10000000-0000-0000-0000-000000000024"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Update the database connection strings"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "id": "10000000-0000-0000-0000-000000000025"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "id": "10000000-0000-0000-0000-000000000026"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Validate the monitoring dashboards"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "attrs": {
+            "id": "10000000-0000-0000-0000-000000000027"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "id": "10000000-0000-0000-0000-000000000028"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Deploy to production"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000029"
+      }
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "id": "10000000-0000-0000-0000-000000000030"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "See the "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "link",
+              "attrs": {
+                "href": "https://example.com/wiki/runbook",
+                "target": "_blank",
+                "rel": "noopener nofollow",
+                "class": "external-link"
+              }
+            }
+          ],
+          "text": "deployment runbook"
+        },
+        {
+          "type": "text",
+          "text": " for full steps."
+        }
+      ]
+    }
+  ]
+}

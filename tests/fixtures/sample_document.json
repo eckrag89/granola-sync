@@ -1,0 +1,332 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "created_at": "2026-03-15T14:00:00.000Z",
+  "notes": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "level": 1
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "Agenda"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "22222222-2222-2222-2222-222222222222"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "Review the Q2 roadmap priorities and assign ownership for each workstream. Discuss blockers from last sprint and align on next steps."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "33333333-3333-3333-3333-333333333333"
+        }
+      },
+      {
+        "type": "heading",
+        "attrs": {
+          "id": "44444444-4444-4444-4444-444444444444",
+          "level": 1
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "Discussion Notes"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "55555555-5555-5555-5555-555555555555"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "Alice walked through the updated timeline for the dashboard redesign. The team agreed to push the launch from April to May to allow for additional user testing."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "66666666-6666-6666-6666-666666666666"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "Bob raised a concern about the API integration timeline. The backend team is still waiting on the third-party vendor for updated documentation."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "77777777-7777-7777-7777-777777777777"
+        }
+      },
+      {
+        "type": "heading",
+        "attrs": {
+          "id": "88888888-8888-8888-8888-888888888888",
+          "level": 1
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "Action Items"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "99999999-9999-9999-9999-999999999999"
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "Alice"
+          },
+          {
+            "type": "text",
+            "text": ": Draft the revised project timeline and share by end of week."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "Bob"
+          },
+          {
+            "type": "text",
+            "text": ": Follow up with the vendor on API docs and report back by Wednesday."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "Carol"
+          },
+          {
+            "type": "text",
+            "text": ": Schedule the user testing sessions for the first two weeks of April."
+          }
+        ]
+      }
+    ]
+  },
+  "title": "Weekly Team Standup",
+  "user_id": "00000000-0000-0000-0000-000000000001",
+  "cloned_from": null,
+  "notes_plain": "Agenda\n\nReview the Q2 roadmap priorities and assign ownership for each workstream. Discuss blockers from last sprint and align on next steps.\n\nDiscussion Notes\n\nAlice walked through the updated timeline for the dashboard redesign. The team agreed to push the launch from April to May to allow for additional user testing.\n\nBob raised a concern about the API integration timeline. The backend team is still waiting on the third-party vendor for updated documentation.\n\nAction Items\n\nAlice: Draft the revised project timeline and share by end of week.\n\nBob: Follow up with the vendor on API docs and report back by Wednesday.\n\nCarol: Schedule the user testing sessions for the first two weeks of April.",
+  "transcribe": false,
+  "google_calendar_event": {
+    "id": "abc123def456ghi789jkl0mno",
+    "summary": "Weekly Team Standup",
+    "description": "Weekly sync to review progress, discuss blockers, and align on priorities.\n\nJoin Zoom Meeting\nhttps://example.zoom.us/j/12345678901\n\nMeeting ID: 123 4567 8901\n",
+    "location": "https://example.zoom.us/j/12345678901",
+    "start": {
+      "dateTime": "2026-03-15T14:00:00-05:00",
+      "timeZone": "America/Chicago"
+    },
+    "end": {
+      "dateTime": "2026-03-15T15:00:00-05:00",
+      "timeZone": "America/Chicago"
+    },
+    "attendees": [
+      {
+        "email": "alice@example.com",
+        "responseStatus": "accepted",
+        "self": true
+      },
+      {
+        "email": "bob@example.com",
+        "displayName": "Bob Jones",
+        "responseStatus": "accepted"
+      },
+      {
+        "email": "carol@example.com",
+        "displayName": "Carol White",
+        "responseStatus": "needsAction"
+      },
+      {
+        "email": "dave@example.com",
+        "displayName": "Dave Brown",
+        "responseStatus": "accepted"
+      }
+    ],
+    "creator": {
+      "email": "alice@example.com"
+    },
+    "organizer": {
+      "email": "dave@example.com",
+      "displayName": "Dave Brown"
+    },
+    "iCalUID": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "calendarId": "alice@example.com",
+    "status": "confirmed",
+    "htmlLink": "https://www.google.com/calendar/event?eid=PLACEHOLDER_EVENT_ID"
+  },
+  "updated_at": "2026-03-15T15:15:00.000Z",
+  "deleted_at": null,
+  "type": "meeting",
+  "overview": null,
+  "public": false,
+  "people": {
+    "creator": {
+      "name": "Alice Smith",
+      "email": "alice@example.com",
+      "details": {
+        "person": {
+          "name": {
+            "fullName": "Alice Smith"
+          },
+          "avatar": "https://example.com/avatars/alice.jpg"
+        },
+        "company": {}
+      }
+    },
+    "attendees": [
+      {
+        "name": "Bob Jones",
+        "email": "bob@example.com",
+        "details": {
+          "person": {
+            "name": {
+              "fullName": "Bob Jones",
+              "givenName": "Bob",
+              "familyName": "Jones"
+            },
+            "avatar": "https://example.com/avatars/bob.jpg",
+            "linkedin": {
+              "handle": "in/bob-jones-12345"
+            },
+            "employment": {
+              "name": "Acme Corp",
+              "title": "Senior Engineer"
+            }
+          },
+          "company": {
+            "name": "Acme Corp"
+          }
+        }
+      },
+      {
+        "name": "Carol White",
+        "email": "carol@example.com",
+        "details": {
+          "person": {
+            "name": {
+              "fullName": "Carol White",
+              "givenName": "Carol",
+              "familyName": "White"
+            },
+            "linkedin": {
+              "handle": "in/carol-white-67890"
+            },
+            "employment": {
+              "name": "Acme Corp",
+              "title": "UX Designer"
+            }
+          },
+          "company": {
+            "name": "Acme Corp"
+          }
+        }
+      },
+      {
+        "name": "Dave Brown",
+        "email": "dave@example.com",
+        "details": {
+          "person": {
+            "name": {
+              "fullName": "Dave Brown"
+            }
+          },
+          "company": {}
+        }
+      }
+    ],
+    "created_at": "2026-03-15T14:00:00.000Z",
+    "sharing_link_visibility": "public"
+  },
+  "chapters": null,
+  "meeting_end_count": 1,
+  "notes_markdown": "# **Agenda**\n\nReview the Q2 roadmap priorities and assign ownership for each workstream. Discuss blockers from last sprint and align on next steps.\n\n# Discussion Notes\n\nAlice walked through the updated timeline for the dashboard redesign. The team agreed to push the launch from April to May to allow for additional user testing.\n\nBob raised a concern about the API integration timeline. The backend team is still waiting on the third-party vendor for updated documentation.\n\n# **Action Items**\n\n**Alice**: Draft the revised project timeline and share by end of week.\n\n**Bob**: Follow up with the vendor on API docs and report back by Wednesday.\n\n**Carol**: Schedule the user testing sessions for the first two weeks of April.",
+  "selected_template": null,
+  "valid_meeting": true,
+  "summary": null,
+  "affinity_note_id": null,
+  "has_shareable_link": true,
+  "show_private_notes": false,
+  "attachments": null,
+  "hubspot_note_url": null,
+  "creation_source": "macOS",
+  "subscription_plan_id": "granola.plan.business.v1",
+  "status": null,
+  "external_transcription_id": null,
+  "audio_file_handle": null,
+  "privacy_mode_enabled": false,
+  "workspace_id": "00000000-0000-0000-0000-000000000002",
+  "visibility": null,
+  "sharing_link_visibility": "public",
+  "notification_config": null,
+  "transcript_deleted_at": null,
+  "metadata": null,
+  "attio_shared_at": null,
+  "was_trashed": null,
+  "is_primary_event_note": null,
+  "zoom_rtms_permission": null,
+  "ydoc_version": null
+}
