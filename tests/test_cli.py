@@ -41,7 +41,6 @@ class TestLoadMeetingFromFile(unittest.TestCase):
             "date": "2026-04-15",
             "participants": ["Alice", "Bob"],
             "folder": "Job search",
-            "channel": "Zoom",
         }
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
@@ -453,7 +452,8 @@ class TestParticipantsFlagInCLI(unittest.TestCase):
                 sys.stdout = old_stdout
             self.assertEqual(rc, 0)
             output = captured.getvalue()
-            self.assertIn("Alice, Bob, Carol, Dave", output)
+            for name in ("Alice", "Bob", "Carol", "Dave"):
+                self.assertIn(f"  - {name}", output)
             self.assertNotIn("Eckrag", output)
         finally:
             os.unlink(md_path)

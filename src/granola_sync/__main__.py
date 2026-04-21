@@ -129,7 +129,7 @@ def _load_meeting_from_file(path: str) -> Meeting | None:
     """Construct a Meeting from a JSON metadata file (MCP-only mode).
 
     Expected JSON shape matches `get --json` output:
-    {id, title, date, participants, folder, channel}
+    {id, title, date, participants, folder}
     """
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -463,7 +463,6 @@ def _meeting_detail(meeting) -> dict:
         "type": meeting.meeting_type,
         "folder": meeting.folder,
         "participants": meeting.participant_names,
-        "channel": meeting.channel,
         "has_notes": meeting.has_cached_notes,
         "has_transcript": meeting.has_cached_transcript,
         "notes_source": (
@@ -488,7 +487,6 @@ def _print_meeting_detail(meeting) -> None:
     print(f"Date:         {detail['date']}")
     print(f"Type:         {detail['type'] or '\u2014'}")
     print(f"Folder:       {detail['folder'] or '\u2014'}")
-    print(f"Channel:      {detail['channel'] or '\u2014'}")
     print(f"Participants: {', '.join(detail['participants']) or '\u2014'}")
     print(f"Notes:        {detail['notes_source']} ({'yes' if detail['has_notes'] else 'no'})")
     print(f"Transcript:   {detail['transcript_entries']} entries")

@@ -1,10 +1,13 @@
-# {title}
-
-**Date:** {date}
-**Participants:** {participants}
-**Channel:** {channel}
-
 ---
+date: {date}
+meeting-title: {title_yaml}
+attendees:
+{participants_yaml}
+type:
+status: draft
+---
+
+# {title}
 
 ## Notes
 

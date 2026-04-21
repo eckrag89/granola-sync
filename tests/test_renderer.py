@@ -12,18 +12,22 @@ from granola_sync.models import (
 from granola_sync.renderer import (
     _escape_yaml_title,
     _format_transcript,
+    _participants_yaml_list,
     render_meeting_note,
 )
 
 
 SIMPLE_TEMPLATE = """\
-# {title}
-
-**Date:** {date}
-**Participants:** {participants}
-**Channel:** {channel}
-
 ---
+date: {date}
+meeting-title: {title_yaml}
+attendees:
+{participants_yaml}
+type:
+status: draft
+---
+
+# {title}
 
 ## Notes
 
@@ -60,9 +64,11 @@ class TestRenderMeetingNote(unittest.TestCase):
         meeting = self._make_meeting()
         result = render_meeting_note(meeting, template=SIMPLE_TEMPLATE)
         self.assertIn("# Team Standup", result)
-        self.assertIn("**Date:** 2026-03-15", result)
-        self.assertIn("Alice, Bob", result)
-        self.assertIn("Zoom", result)
+        self.assertIn("meeting-title: Team Standup", result)
+        self.assertIn("date: 2026-03-15", result)
+        self.assertIn("  - Alice", result)
+        self.assertIn("  - Bob", result)
+        self.assertIn("status: draft", result)
         self.assertIn("# Meeting Notes", result)
 
     def test_enhanced_notes(self):
@@ -108,10 +114,11 @@ class TestRenderMeetingNote(unittest.TestCase):
         # No "None" should appear in output
         self.assertNotIn("None", result)
 
-    def test_title_with_colon_escaped(self):
+    def test_title_with_colon_escaped_in_frontmatter(self):
         meeting = self._make_meeting(title='Review: Q2 "Goals"')
         result = render_meeting_note(meeting, template=SIMPLE_TEMPLATE)
-        self.assertIn('"Review: Q2 \\"Goals\\""', result)
+        self.assertIn('meeting-title: "Review: Q2 \\"Goals\\""', result)
+        self.assertIn('# Review: Q2 "Goals"', result)
 
     def test_empty_notes_renders_placeholder(self):
         meeting = self._make_meeting(
@@ -141,6 +148,25 @@ class TestRenderMeetingNote(unittest.TestCase):
         )
         self.assertIn("MCP version.", result)
         self.assertNotIn("Cached version.", result)
+
+
+class TestParticipantsYamlList(unittest.TestCase):
+    def test_plain_names(self):
+        self.assertEqual(
+            _participants_yaml_list(["Alice", "Bob"]),
+            "  - Alice\n  - Bob",
+        )
+
+    def test_empty_list(self):
+        self.assertEqual(_participants_yaml_list([]), "")
+
+    def test_name_with_comma_quoted(self):
+        result = _participants_yaml_list(["Doe, Jane"])
+        self.assertEqual(result, '  - "Doe, Jane"')
+
+    def test_name_with_colon_quoted(self):
+        result = _participants_yaml_list(["Dr: Alice"])
+        self.assertEqual(result, '  - "Dr: Alice"')
 
 
 class TestEscapeYamlTitle(unittest.TestCase):

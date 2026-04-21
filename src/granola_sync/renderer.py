@@ -62,12 +62,15 @@ def render_meeting_note(
     else:
         transcript = _format_transcript(meeting)
 
+    title = meeting.title or "Untitled"
+
     # Build replacement map
     replacements = {
-        "{title}": _escape_yaml_title(meeting.title or "Untitled"),
+        "{title}": title,
+        "{title_yaml}": _escape_yaml_title(title),
         "{date}": meeting.date_str,
         "{participants}": ", ".join(meeting.participant_names) or "",
-        "{channel}": meeting.channel,
+        "{participants_yaml}": _participants_yaml_list(meeting.participant_names),
         "{notes}": notes,
         "{enhanced_notes}": enhanced_notes,
         "{transcript}": transcript,
@@ -78,6 +81,29 @@ def render_meeting_note(
         result = result.replace(placeholder, value)
 
     return result
+
+
+def _participants_yaml_list(names: list[str]) -> str:
+    """Render participant names as an indented YAML list body.
+
+    Returns an empty string for an empty list, producing an empty-list frontmatter value.
+    """
+    if not names:
+        return ""
+    return "\n".join(f"  - {_escape_yaml_scalar(n)}" for n in names)
+
+
+def _escape_yaml_scalar(value: str) -> str:
+    """Quote a YAML scalar when it contains characters that would break parsing."""
+    if not value:
+        return '""'
+    needs_quoting = any(c in value for c in (':', '"', "'", "#", "[", "]", "{", "}", ",", "&", "*", "|", ">", "!", "%", "@", "`"))
+    if value.strip() != value:
+        needs_quoting = True
+    if needs_quoting:
+        escaped = value.replace('"', '\\"')
+        return f'"{escaped}"'
+    return value
 
 
 def _escape_yaml_title(title: str) -> str:

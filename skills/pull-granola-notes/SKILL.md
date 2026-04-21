@@ -105,7 +105,7 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 8. Write the JSON meeting-data file to `/tmp/granola-sync-meeting-<id8>.json` ONLY when the cache search in step A returned nothing (MCP-only mode). Shape:
    ```json
    {"id": "...", "title": "...", "date": "YYYY-MM-DD",
-    "participants": ["name1", "name2"], "folder": "", "channel": ""}
+    "participants": ["name1", "name2"], "folder": ""}
    ```
    When cache had the meeting, SKIP this step — CLI uses the cache record and `--participants` overrides the attendee list.
 

@@ -80,20 +80,6 @@ class Meeting:
         return names
 
     @property
-    def channel(self) -> str:
-        """Human-readable conferencing type."""
-        if self.calendar and self.calendar.conferencing_type:
-            raw = self.calendar.conferencing_type.lower()
-            labels = {
-                "zoom": "Zoom",
-                "google_meet": "Google Meet",
-                "teams": "Microsoft Teams",
-                "webex": "Webex",
-            }
-            return labels.get(raw, raw.replace("_", " ").title())
-        return ""
-
-    @property
     def best_notes(self) -> str:
         """Fallback chain: markdown > plain. ProseMirror conversion is caller's job."""
         if self.notes_markdown:
