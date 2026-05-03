@@ -67,7 +67,8 @@ python3 -m granola_sync render <meeting_id> \
 # Push to Obsidian (auto-resolves path via config.json)
 python3 -m granola_sync push <meeting_id>
 
-# Push with collision check (dry-run) and force overwrite
+# Dry-run prints the resolved target path; --force writes a fresh template at
+# the default path, bypassing the existing-file merge
 python3 -m granola_sync push <meeting_id> --dry-run
 python3 -m granola_sync push <meeting_id> --force
 
@@ -85,6 +86,8 @@ Meeting IDs support prefix matching (e.g., `2418a083` matches the full UUID).
 - **ProseMirror converter** (`prosemirror.py`): Converts Granola's rich text editor format to markdown. This is the primary notes extraction path — ~35% of meetings only have ProseMirror notes, not pre-rendered markdown.
 - **Config** (`config.json`): Maps Granola folders to Obsidian vault paths. Meetings in unmapped folders go to a default location.
 - **Renderer** (`renderer.py`): Populates the meeting note template with data. Notes fallback chain: `notes_markdown` > ProseMirror conversion > `notes_plain`.
+- **Matcher** (`matcher.py`): On push, walks the destination folder looking for an existing note whose `meeting-title` frontmatter matches — supports prep-note workflows (write your prep before the meeting; the pull merges into it) and re-pulls without duplication. Multi-match cases return exit code 3 + a JSON candidate list so the caller disambiguates.
+- **Merger** (`merger.py`): When the resolved target already exists, the push merges instead of overwriting. Tool-owned H2 sections (`## Notes`, `## Enhanced Notes`, `## Transcript`) are replaced; user-owned content (`## Prep Notes`, custom sections, preamble) is preserved. Frontmatter merges on the same principle: tool-owned fields (`date`, `meeting-title`, `attendees`) update from the new render when non-empty; everything else stays put. Use `--force` for a clean overwrite at the default path.
 
 ### Cache encryption risk
 

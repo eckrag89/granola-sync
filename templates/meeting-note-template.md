@@ -9,6 +9,8 @@ status: draft
 
 # {title}
 
+## Prep Notes
+
 ## Notes
 
 {notes}

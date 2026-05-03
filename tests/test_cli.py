@@ -198,32 +198,28 @@ class TestTranscriptFile(unittest.TestCase):
             os.unlink(md_path)
 
 
-class TestCollisionDetection(unittest.TestCase):
-    """Test push collision detection (exit code 2 + JSON)."""
+class TestExistingFileBehavior(unittest.TestCase):
+    """Push merges into existing files and disambiguates multi-match candidates."""
 
-    def test_collision_returns_exit_2(self):
-        """Push to existing file returns exit 2 with collision JSON."""
+    def test_existing_file_merges_user_content_preserved(self):
+        """Push to existing file merges (preserves prep notes), exits 0."""
         meeting_data = {
-            "id": "test-collision",
-            "title": "Collision Test",
+            "id": "test-merge",
+            "title": "Merge Test",
             "date": "2026-04-15",
         }
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Create the meeting data file
             md_path = os.path.join(tmpdir, "meeting.json")
             with open(md_path, "w") as f:
                 json.dump(meeting_data, f)
 
-            # Create a config that points to tmpdir
-            config_data = {"default_destination": tmpdir, "folder_mappings": {}}
-            config_path = os.path.join(tmpdir, "config.json")
-            with open(config_path, "w") as f:
-                json.dump(config_data, f)
-
-            # Pre-create the target file (collision)
-            target = os.path.join(tmpdir, "2026-04-15 - Collision Test - Meeting Notes.md")
+            target = os.path.join(tmpdir, "2026-04-15 - Merge Test - Meeting Notes.md")
             with open(target, "w") as f:
-                f.write("existing content")
+                f.write(
+                    "---\nmeeting-title: Merge Test\n---\n\n"
+                    "## Prep Notes\n\nuser prep content\n\n"
+                    "## Notes\n\n## Enhanced Notes\n\n## Transcript\n"
+                )
 
             import io
             import sys
@@ -240,18 +236,62 @@ class TestCollisionDetection(unittest.TestCase):
                         default_destination=tmpdir,
                     )
                     rc = main([
-                        "push", "test-collision",
+                        "push", "test-merge",
                         "--meeting-data", md_path,
                     ])
             finally:
                 sys.stdout = old_stdout
 
-            self.assertEqual(rc, 2)
+            self.assertEqual(rc, 0)
+            with open(target) as f:
+                content = f.read()
+            self.assertIn("user prep content", content)
+            self.assertIn("## Notes", content)
+
+    def test_multi_match_returns_exit_3(self):
+        """Two existing notes share a meeting-title -> exit 3 with candidates."""
+        meeting_data = {
+            "id": "test-multi",
+            "title": "Standup",
+            "date": "2026-04-15",
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            md_path = os.path.join(tmpdir, "meeting.json")
+            with open(md_path, "w") as f:
+                json.dump(meeting_data, f)
+
+            for sub in ("a", "b"):
+                p = os.path.join(tmpdir, sub, "note.md")
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                with open(p, "w") as f:
+                    f.write("---\nmeeting-title: Standup\n---\n\n## Prep Notes\n")
+
+            import io
+            import sys
+            from unittest.mock import patch
+
+            captured = io.StringIO()
+            old_stdout = sys.stdout
+            sys.stdout = captured
+            try:
+                with patch("granola_sync.__main__.Config.load") as mock_config:
+                    from granola_sync.config import Config
+                    mock_config.return_value = Config(
+                        folder_mappings={},
+                        default_destination=tmpdir,
+                    )
+                    rc = main([
+                        "push", "test-multi",
+                        "--meeting-data", md_path,
+                    ])
+            finally:
+                sys.stdout = old_stdout
+
+            self.assertEqual(rc, 3)
             result = json.loads(captured.getvalue())
-            self.assertTrue(result["collision"])
-            self.assertEqual(result["meeting_id"], "test-collision")
-            self.assertEqual(result["meeting_title"], "Collision Test")
-            self.assertIn("existing_path", result)
+            self.assertTrue(result["multi_match"])
+            self.assertEqual(len(result["candidates"]), 2)
+            self.assertEqual(result["meeting_title"], "Standup")
 
     def test_force_overwrites(self):
         """--force bypasses collision check and writes the file."""

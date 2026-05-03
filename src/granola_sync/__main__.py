@@ -23,6 +23,8 @@ import sys
 from .cache import get_meeting_by_id, load_meetings, search_meetings
 from .config import Config, resolve_output_path
 from .formatters import meetings_to_json, meetings_to_table
+from .matcher import find_existing_match
+from .merger import merge_files
 from .models import CalendarEvent, Meeting, Participant, parse_datetime
 from .prosemirror import prosemirror_to_markdown
 from .renderer import render_meeting_note
@@ -39,18 +41,48 @@ def _read_file_arg(path: str) -> str:
 
 
 def _read_transcript_file(path: str) -> str:
-    """Read a transcript file, unwrapping MCP's large-response JSON envelope and
+    """Read a transcript file, unwrapping MCP's large-response envelopes and
     normalizing Granola's inline speaker markers.
 
-    When `mcp__granola__get_meeting_transcript` exceeds its token limit, the server
-    saves the response to disk wrapped as `{"id": ..., "title": ..., "transcript":
-    <str or list>}`. The inner string uses Granola's `Me:` / `Them:` markers with
-    no line breaks between turns; this function splits on those markers and emits
-    the `**You:** / **Other:**` convention used elsewhere.
+    Two envelope shapes are observed in practice:
+
+    1. ``{"id": ..., "title": ..., "transcript": <str|list>}`` — the legacy
+       shape produced when Granola's MCP server saves an oversized response
+       directly to disk.
+    2. ``[{"type": "text", "text": "<inner JSON>"}]`` — the standard MCP
+       content-block array. Claude Code wraps large tool results in this shape
+       when persisting them; the inner JSON is shape (1).
+
+    Either shape resolves to the same downstream path: extract the
+    ``transcript`` field and run it through ``_normalize_transcript_text`` (or
+    ``_format_mcp_transcript_entries`` for structured lists). The inner string
+    uses Granola's ``Me:`` / ``Them:`` markers with no line breaks between
+    turns, which the normalizer splits and rewrites to the
+    ``**You:** / **Other:**`` convention.
     """
     content = _read_file_arg(path)
     if not content:
         return ""
+    stripped = content.lstrip()
+    if stripped.startswith("["):
+        try:
+            parsed = json.loads(stripped)
+        except (json.JSONDecodeError, ValueError):
+            parsed = None
+        if isinstance(parsed, list):
+            for block in parsed:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    inner = block.get("text", "")
+                    if isinstance(inner, str) and inner.strip():
+                        return _decode_transcript_payload(inner)
+            return content
+    return _decode_transcript_payload(content)
+
+
+def _decode_transcript_payload(content: str) -> str:
+    """Decode a transcript payload — either a ``{id, title, transcript}`` JSON
+    envelope or raw transcript text — to formatted markdown.
+    """
     stripped = content.lstrip()
     if stripped.startswith("{"):
         try:
@@ -408,7 +440,20 @@ def _cmd_with_meeting_data(args) -> int:
 
 
 def _do_push(meeting: Meeting, args) -> int:
-    """Shared push logic for cache-based and MCP-only modes."""
+    """Shared push logic for cache-based and MCP-only modes.
+
+    Resolves the default output path, then searches the destination folder for
+    an existing note whose ``meeting-title`` frontmatter matches. A single
+    match becomes the target — supporting prep-note workflows and re-pulls
+    without duplication. Multiple matches return exit code 3 so the caller
+    can disambiguate. ``--force`` bypasses the search and writes a fresh file
+    at the default path, replacing any existing content.
+
+    When the resolved target already exists, content is merged via
+    :func:`merger.merge_files`: tool-owned sections (Notes / Enhanced Notes /
+    Transcript) replaced, user-owned sections (Prep Notes, custom content)
+    preserved.
+    """
     config = Config.load()
     output_path = resolve_output_path(
         meeting,
@@ -417,21 +462,31 @@ def _do_push(meeting: Meeting, args) -> int:
         title_override=getattr(args, "output_title", "") or "",
     )
 
-    # Dry-run: print path and exit
-    if args.dry_run:
-        print(output_path)
-        return 0
+    matches: list[str] = []
+    if not args.force:
+        matches = find_existing_match(
+            os.path.dirname(output_path),
+            meeting.title,
+            meeting.date_str,
+        )
+        if len(matches) > 1:
+            print(json.dumps(
+                {
+                    "multi_match": True,
+                    "candidates": matches,
+                    "default_path": output_path,
+                    "meeting_id": meeting.id,
+                    "meeting_title": meeting.title,
+                },
+                ensure_ascii=False,
+            ))
+            return 3
 
-    # Collision detection
-    if not args.force and os.path.exists(output_path):
-        collision = {
-            "collision": True,
-            "existing_path": output_path,
-            "meeting_id": meeting.id,
-            "meeting_title": meeting.title,
-        }
-        print(json.dumps(collision, ensure_ascii=False))
-        return 2
+    target_path = matches[0] if matches else output_path
+
+    if args.dry_run:
+        print(target_path)
+        return 0
 
     enhanced_notes, transcript_override = _resolve_render_args(args)
     rendered = render_meeting_note(
@@ -440,11 +495,20 @@ def _do_push(meeting: Meeting, args) -> int:
         transcript_override=transcript_override,
     )
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
+    if not args.force and os.path.exists(target_path):
+        try:
+            with open(target_path, "r", encoding="utf-8") as f:
+                existing = f.read()
+        except OSError as e:
+            print(f"Error reading existing file: {e}", file=sys.stderr)
+            return 1
+        rendered = merge_files(existing, rendered)
+
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
         f.write(rendered)
 
-    print(f"Pushed to: {output_path}")
+    print(f"Pushed to: {target_path}")
     return 0
 
 

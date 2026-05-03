@@ -81,9 +81,10 @@ python3 -m granola_sync push <meeting_id> [--enhanced-notes TEXT]
 - `--enhanced-notes-file PATH` — read AI summary from file (overrides `--enhanced-notes` string)
 - `--transcript-file PATH` — read pre-formatted transcript from file
 - `--meeting-data PATH` — JSON file with meeting metadata; skips cache lookup entirely (MCP-only mode)
-- `--force` — overwrite existing file without collision check (push only)
-- `--dry-run` — print resolved output path without writing (push only)
-- Collision detection: push returns exit code 2 + JSON `{"collision": true, ...}` when target exists
+- `--force` — bypass match search + merge; write a fresh template at the default path, replacing any existing file (push only)
+- `--dry-run` — print resolved target path without writing (push only)
+- **Match + merge behavior**: push searches the destination folder recursively for an existing note whose `meeting-title` frontmatter matches; that file becomes the target. When the target exists, content is merged — tool-owned H2 sections (`## Notes`, `## Enhanced Notes`, `## Transcript`) replaced, user-owned sections (`## Prep Notes`, custom content) preserved.
+- **Multi-match**: when 2+ files match by title, push exits with code 3 and prints `{"multi_match": true, "candidates": [...], "default_path": "..."}` so the caller can disambiguate.
 
 ## Key Data Locations
 - **Granola local cache:** `~/Library/Application Support/Granola/cache-v*.json` (glob — version may change)

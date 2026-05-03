@@ -21,6 +21,9 @@ kanban-plugin: board
 - [ ] Auto-sync on session start (SessionStart hook) — sync meetings since last session automatically
 - [ ] Content review/formatting skill — format and style-check meeting notes to match preferences
 - [ ] Logging module — structured logging for sync operations and debugging
+- [ ] Cache-first folder discovery in `/pull-granola-notes` — Granola MCP's `list_meeting_folders` scopes to the personal workspace, so folders in shared/team workspaces are invisible to the skill's folder-browse path. The local cache's `documentListsMetadata` has all folders across workspaces. Swap the skill's folder discovery to read cache, keep MCP for AI summary/transcript.
+- [ ] Promote `outlook-event-id` (or generic `calendar-event-id`) to a primary match key in `matcher.py`. Today the matcher only uses `meeting-title` because Granola's cache models `google_calendar_event` explicitly but does not surface a stable Outlook/iCal event ID. Path: parse the additional calendar-source fields from cache (or pull from MCP) so prep notes created by an external skill can be matched deterministically by ID rather than fuzzy title.
+- [ ] Fuzzy fallback in `matcher.py` when frontmatter is incomplete. When `meeting-title` frontmatter is empty/missing on a candidate file, attempt fallback signals: (1) filename contains the meeting date in any common form (`May 1`, `5/1`, `2026-05-01`); (2) folder path or filename contains an attendee surname/short-name; (3) first H1 in body contains words from the meeting title. Fuzzy matches must still pass the date filter, and any fuzzy hit promotes to multi-match if more than one file qualifies. Goal: match prep notes whose authors moved fast and didn't fill in the full frontmatter convention. Risk: false positives — should only run as a last resort after the title+date primary match returns zero candidates.
 
 ## First Run Feedback (2026-04-18)
 

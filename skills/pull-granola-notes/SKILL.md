@@ -9,6 +9,17 @@ allowed-tools: Read, Write(/tmp/granola-sync-*), Bash, mcp__granola__list_meetin
 
 Pull ALL available meeting data (private notes, AI summary, transcript, metadata) into a single Obsidian note. Python CLI handles data assembly and path resolution; this skill handles meeting identification, MCP fetching, and post-push verification.
 
+## Section ownership (important for re-pulls and prep notes)
+
+The push subcommand merges into existing files instead of overwriting them. Sections are split by ownership:
+
+- **Tool-owned** (replaced on every pull): `## Notes`, `## Enhanced Notes`, `## Transcript`
+- **User-owned** (preserved verbatim): `## Prep Notes`, any other H2 sections, H1 preamble, free text
+
+This means the user can write a prep note ahead of the meeting (with `meeting-title` frontmatter set to the same title Granola will use), and `/pull-granola-notes` will land on that file via title-match, replace the empty tool sections, and leave the prep notes untouched. Re-pulls of an already-populated note refresh the tool sections without disturbing anything else.
+
+Frontmatter merges on the same rule: `date`, `meeting-title`, and `attendees` update from the new render when non-empty; user-set fields (`type`, `status`, `outlook-event-id`, custom keys) are preserved.
+
 ## Important Paths
 
 All paths below are relative to `<REPO_ROOT>` — resolve it once at the start of each invocation (see Pipeline Step 0).
@@ -120,18 +131,18 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 
    If only one or two sections are empty, proceed — warn nothing here; the post-push verification (step F) reports the actual state.
 
-10. Dry-run collision check:
+10. **Dry-run path resolution.** The push subcommand searches the destination folder (recursively) for an existing note whose `meeting-title` frontmatter matches this meeting; if found, that file is the target so prep notes and re-pulls don't create duplicates.
+
     ```bash
     cd "<REPO_ROOT>/src" && python3 -m granola_sync push <id> --dry-run \
       [--meeting-data /tmp/granola-sync-meeting-<id8>.json] \
       [--output-folder "<absolute path>"] \
       [--output-title "<name>"]
     ```
-    The command prints the resolved path. Check collision:
-    ```bash
-    test -e "<printed path>" && echo COLLISION || echo OK
-    ```
-    If COLLISION: ask the user — overwrite (`--force`), rename (append ` (2)` before `.md`), or skip.
+
+    Exit codes:
+    - **0**: prints the resolved target path. If a file already exists there, the push will MERGE — tool-owned sections (Notes / Enhanced Notes / Transcript) are replaced, user-owned sections (Prep Notes, custom content) are preserved. No user prompt needed.
+    - **3**: multi-match. Prints JSON `{"multi_match": true, "candidates": [...], "default_path": "..."}`. STOP and ask the user to pick a candidate path (then re-run with `--output-folder` + `--output-title` to target that file) or to ignore matches and write at `default_path` (use `--force`).
 
 ### E. Push
 
@@ -197,8 +208,8 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 - MCP `get_meetings` fails → enhanced notes empty; still push if other sections have content; report "empty — MCP get_meetings failed" in step 13.
 - MCP `get_meeting_transcript` fails → transcript empty; same handling.
 - Unexpected XML tag missing (e.g. `<summary>` not in response) → treat as empty for that field, note in report.
-- CLI exit code 2 on push → collision path, handle per step 10.
-- Any CLI exit code other than 0 or 2 → STOP, show stderr, do not report success.
+- CLI exit code 3 on push → multi-match path, handle per step 10.
+- Any CLI exit code other than 0 or 3 → STOP, show stderr, do not report success.
 
 ## Notes
 
