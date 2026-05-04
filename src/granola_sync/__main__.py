@@ -26,6 +26,7 @@ from .formatters import meetings_to_json, meetings_to_table
 from .matcher import find_existing_match
 from .merger import merge_files
 from .models import CalendarEvent, Meeting, Participant, parse_datetime
+from .prep import render_prep_note
 from .prosemirror import prosemirror_to_markdown
 from .renderer import render_meeting_note
 
@@ -304,11 +305,48 @@ def main(argv: list[str] | None = None) -> int:
     p_push.add_argument("--force", action="store_true", help="Overwrite existing file without collision check")
     p_push.add_argument("--dry-run", action="store_true", help="Print output path without writing")
 
+    # prep — create a prep note from explicit calendar inputs (no Granola lookup)
+    p_prep = sub.add_parser(
+        "prep",
+        help="Create a prep-meeting note from calendar event metadata",
+    )
+    p_prep.add_argument("--title", required=True, help="Meeting subject (becomes meeting-title)")
+    p_prep.add_argument("--date", required=True, help="Meeting date in YYYY-MM-DD")
+    p_prep.add_argument(
+        "--attendees",
+        default="",
+        help="Attendee names. JSON array or comma-separated string. May be empty.",
+    )
+    p_prep.add_argument(
+        "--outlook-event-id",
+        default="",
+        help="Outlook calendar event ID (reserved for future matching; stored in frontmatter)",
+    )
+    p_prep.add_argument(
+        "--output-folder",
+        default="",
+        help="Destination folder (absolute path). Falls back to config default_destination when omitted.",
+    )
+    p_prep.add_argument(
+        "--output-title",
+        default="",
+        help='Override filename base. Final file is "{value}.md". Defaults to "{date} - {title} - Meeting Notes".',
+    )
+    p_prep.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass existing-prep-note check and overwrite at the resolved path",
+    )
+
     args = parser.parse_args(argv)
 
     if not args.command:
         parser.print_help()
         return 1
+
+    # prep mode never touches the Granola cache — handle before cache load
+    if args.command == "prep":
+        return _cmd_prep(args)
 
     # MCP-only mode: --meeting-data bypasses cache entirely
     if args.command in ("render", "push") and args.meeting_data:
@@ -405,6 +443,72 @@ def _cmd_push(meetings, args) -> int:
         return 1
 
     return _do_push(meeting, args)
+
+
+def _cmd_prep(args) -> int:
+    """Create a prep-meeting note from explicit calendar event metadata.
+
+    No Granola cache lookup — the meeting hasn't happened yet. Resolves the
+    output path via the same config logic the push command uses, runs the
+    matcher to detect duplicate prep notes (by ``meeting-title`` + ``date``),
+    and writes a minimal frontmatter + ``## Prep Notes`` skeleton when no
+    duplicate exists. Existing-match path returns exit code 4 with a JSON
+    candidate list so the caller can disambiguate.
+    """
+    title = args.title.strip()
+    date = args.date.strip()
+    if not title or not date:
+        print("--title and --date are required", file=sys.stderr)
+        return 1
+
+    attendees = _parse_participants_flag(args.attendees) or []
+
+    # Build a minimal Meeting so resolve_output_path can derive the filename
+    # from the same conventions push uses.
+    calendar = None
+    dt = parse_datetime(date + "T00:00:00Z") if "T" not in date else parse_datetime(date)
+    if dt:
+        calendar = CalendarEvent(start=dt)
+    meeting = Meeting(
+        title=title,
+        creator=Participant(name=attendees[0]) if attendees else None,
+        attendees=[Participant(name=n) for n in attendees[1:]],
+        calendar=calendar,
+    )
+
+    config = Config.load()
+    output_path = resolve_output_path(
+        meeting,
+        config,
+        folder_override=args.output_folder or "",
+        title_override=args.output_title or "",
+    )
+
+    if not args.force:
+        matches = find_existing_match(os.path.dirname(output_path), title, date)
+        if matches:
+            print(json.dumps({
+                "existing": True,
+                "candidates": matches,
+                "default_path": output_path,
+                "meeting_title": title,
+                "date": date,
+            }, ensure_ascii=False))
+            return 4
+
+    body = render_prep_note(
+        title=title,
+        date=date,
+        attendees=attendees,
+        outlook_event_id=args.outlook_event_id or "",
+    )
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(body)
+
+    print(f"Created prep note at: {output_path}")
+    return 0
 
 
 def _cmd_with_meeting_data(args) -> int:

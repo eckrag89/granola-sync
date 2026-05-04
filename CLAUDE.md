@@ -37,8 +37,10 @@ granola-sync/
 ├── docs/
 │   └── mcp-shapes.md                     # MCP response schemas (placeholder, validate on first use)
 ├── skills/
-│   └── pull-granola-notes/
-│       └── SKILL.md                      # /pull-granola-notes skill (symlinked to ~/.claude/skills/)
+│   ├── pull-granola-notes/
+│   │   └── SKILL.md                      # /pull-granola-notes skill (symlinked to ~/.claude/skills/)
+│   └── prep-meeting-note/
+│       └── SKILL.md                      # /prep-meeting-note skill (symlinked to ~/.claude/skills/)
 ├── templates/
 │   └── meeting-note-template.md           # Standard meeting note structure with {placeholder} markers
 ├── src/
@@ -75,6 +77,9 @@ python3 -m granola_sync render <meeting_id> [--output PATH] [--enhanced-notes TE
 python3 -m granola_sync push <meeting_id> [--enhanced-notes TEXT]
                         [--enhanced-notes-file PATH] [--transcript-file PATH]
                         [--meeting-data PATH] [--force] [--dry-run]
+python3 -m granola_sync prep --title TITLE --date YYYY-MM-DD
+                        [--attendees JSON_OR_CSV] [--outlook-event-id ID]
+                        [--output-folder PATH] [--output-title BASE] [--force]
 ```
 
 ### Phase 3 CLI flags
@@ -123,13 +128,12 @@ MCP orchestration is handled by the `/pull-granola-notes` skill, not in Python. 
 cd granola-sync && PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-## Skill: `/pull-granola-notes`
+## Skills
 
-Global skill for pulling Granola meetings into Obsidian. Stored at `skills/pull-granola-notes/SKILL.md`, symlinked to `~/.claude/skills/pull-granola-notes`.
+Global Claude Code skills, each symlinked to `~/.claude/skills/`:
 
-Usage: `/pull-granola-notes standup from today` or `/pull-granola-notes` (shows recent meetings to pick from).
-
-Pipeline: find meeting (cache-first, MCP fallback) -> fetch enhanced notes + transcript via MCP -> write temp files -> push via CLI -> cleanup.
+- **`/pull-granola-notes`** (`skills/pull-granola-notes/SKILL.md`) — pull a Granola meeting into Obsidian. Cache + MCP for data, CLI `push` for the write.
+- **`/prep-meeting-note`** (`skills/prep-meeting-note/SKILL.md`) — create a prep note for an upcoming Outlook calendar event. M365 MCP for the lookup, CLI `prep` for the write. Outlook-only; other providers require adapting the search step.
 
 ## Phase Roadmap
 1. **Phase 1 (done):** Global scaffolding — project folder, templates, global skill, MCP config

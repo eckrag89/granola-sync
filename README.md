@@ -25,8 +25,9 @@ cd granola-sync
 cp config.example.json config.json
 # Edit config.json with your Obsidian vault paths — see Configuration section below
 
-# Symlink the skill for global access from any directory
+# Symlink the skills for global access from any directory
 ln -s "$(pwd)/skills/pull-granola-notes" ~/.claude/skills/pull-granola-notes
+ln -s "$(pwd)/skills/prep-meeting-note" ~/.claude/skills/prep-meeting-note
 ```
 
 The symlink means edits to `skills/pull-granola-notes/SKILL.md` are immediately live globally. The skill auto-resolves its repo root via the symlink at runtime, so no path editing is required after cloning.
@@ -112,14 +113,22 @@ When the cache is unavailable, the `--meeting-data` flag allows fully MCP-driven
 }
 ```
 
-### Using the skill
+### Using the skills
 
 From any Claude Code session:
+
 ```
 /pull-granola-notes standup from today
 /pull-granola-notes client intro call
 /pull-granola-notes           # shows recent meetings to pick from
+
+/prep-meeting-note 1-1 with Alice tomorrow into 1-1's/Alice
+/prep-meeting-note weekly sync next Tuesday save to Projects/Foo as "Weekly Sync"
 ```
+
+`/prep-meeting-note` creates a prep note ahead of an upcoming meeting, populated with frontmatter from the matching Outlook calendar event. Granola-sync's `/pull-granola-notes` later finds the prep note via the `meeting-title` + `date` frontmatter and merges the post-meeting Granola data in without disturbing the user's prep content.
+
+**Calendar source:** the prep skill calls Microsoft 365's `outlook_calendar_search` MCP tool. Other calendar providers are not supported — to swap in (e.g.) Google Calendar, replace the MCP call in `skills/prep-meeting-note/SKILL.md` step A and adapt the field extraction.
 
 ### Permission allowlist (optional)
 
