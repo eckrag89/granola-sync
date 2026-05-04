@@ -7,18 +7,16 @@ type:
 status: draft
 ---
 
-# {title}
+# Prep Notes
 
-## Prep Notes
-
-## Notes
+# Notes
 
 {notes}
 
-## Enhanced Notes
+# Enhanced Notes
 
 {enhanced_notes}
 
-## Transcript
+# Transcript
 
 {transcript}

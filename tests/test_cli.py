@@ -217,8 +217,8 @@ class TestExistingFileBehavior(unittest.TestCase):
             with open(target, "w") as f:
                 f.write(
                     "---\nmeeting-title: Merge Test\n---\n\n"
-                    "## Prep Notes\n\nuser prep content\n\n"
-                    "## Notes\n\n## Enhanced Notes\n\n## Transcript\n"
+                    "# Prep Notes\n\nuser prep content\n\n"
+                    "# Notes\n\n# Enhanced Notes\n\n# Transcript\n"
                 )
 
             import io
@@ -246,7 +246,7 @@ class TestExistingFileBehavior(unittest.TestCase):
             with open(target) as f:
                 content = f.read()
             self.assertIn("user prep content", content)
-            self.assertIn("## Notes", content)
+            self.assertIn("# Notes", content)
 
     def test_multi_match_returns_exit_3(self):
         """Two existing notes share a meeting-title -> exit 3 with candidates."""
@@ -264,7 +264,7 @@ class TestExistingFileBehavior(unittest.TestCase):
                 p = os.path.join(tmpdir, sub, "note.md")
                 os.makedirs(os.path.dirname(p), exist_ok=True)
                 with open(p, "w") as f:
-                    f.write("---\nmeeting-title: Standup\n---\n\n## Prep Notes\n")
+                    f.write("---\nmeeting-title: Standup\n---\n\n# Prep Notes\n")
 
             import io
             import sys

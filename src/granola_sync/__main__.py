@@ -25,6 +25,7 @@ from .config import Config, resolve_output_path
 from .formatters import meetings_to_json, meetings_to_table
 from .matcher import find_existing_match
 from .merger import merge_files
+from .migrate import migrate_folder
 from .models import CalendarEvent, Meeting, Participant, parse_datetime
 from .prep import render_prep_note
 from .prosemirror import prosemirror_to_markdown
@@ -232,7 +233,7 @@ def _add_render_flags(parser: argparse.ArgumentParser) -> None:
         default="",
         help=(
             "Caller-generated meeting summary content (Summary + Key Decisions"
-            " + Action Items). Rendered as a ## Meeting Summary section above"
+            " + Action Items). Rendered as a # Meeting Summary section above"
             " the first existing H2. Omit to skip the section entirely."
         ),
     )
@@ -358,6 +359,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Bypass existing-prep-note check and overwrite at the resolved path",
     )
 
+    # migrate-headings — one-time bump of files written under the H2 convention
+    p_migrate = sub.add_parser(
+        "migrate-headings",
+        help="Bump tool-section headings from H2 to H1 in existing meeting notes",
+    )
+    p_migrate.add_argument(
+        "--folder",
+        required=True,
+        help="Folder to walk recursively (absolute path).",
+    )
+    p_migrate.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write changes to disk. Default is dry-run preview.",
+    )
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -367,6 +384,10 @@ def main(argv: list[str] | None = None) -> int:
     # prep mode never touches the Granola cache — handle before cache load
     if args.command == "prep":
         return _cmd_prep(args)
+
+    # migrate-headings is a vault-side cleanup pass — no cache needed
+    if args.command == "migrate-headings":
+        return _cmd_migrate(args)
 
     # MCP-only mode: --meeting-data bypasses cache entirely
     if args.command in ("render", "push") and args.meeting_data:
@@ -466,13 +487,40 @@ def _cmd_push(meetings, args) -> int:
     return _do_push(meeting, args)
 
 
+def _cmd_migrate(args) -> int:
+    """Walk a folder and bump tool-section headings from H2 to H1.
+
+    Default is dry-run preview; ``--apply`` writes changes. Output is a
+    per-file change summary so the caller can review before applying.
+    """
+    folder = os.path.abspath(args.folder)
+    if not os.path.isdir(folder):
+        print(f"Folder not found: {folder}", file=sys.stderr)
+        return 1
+
+    results = migrate_folder(folder, apply=args.apply)
+    if not results:
+        print(f"No files needed migration under {folder}.")
+        return 0
+
+    mode = "APPLIED" if args.apply else "DRY RUN"
+    print(f"[{mode}] {len(results)} file(s) needed migration under {folder}:\n")
+    for r in results:
+        print(f"  {r.path}")
+        for line in r.summary_lines():
+            print(f"    - {line}")
+    if not args.apply:
+        print("\nRe-run with --apply to write changes.")
+    return 0
+
+
 def _cmd_prep(args) -> int:
     """Create a prep-meeting note from explicit calendar event metadata.
 
     No Granola cache lookup — the meeting hasn't happened yet. Resolves the
     output path via the same config logic the push command uses, runs the
     matcher to detect duplicate prep notes (by ``meeting-title`` + ``date``),
-    and writes a minimal frontmatter + ``## Prep Notes`` skeleton when no
+    and writes a minimal frontmatter + ``# Prep Notes`` skeleton when no
     duplicate exists. Existing-match path returns exit code 4 with a JSON
     candidate list so the caller can disambiguate.
     """

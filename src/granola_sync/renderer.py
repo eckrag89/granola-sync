@@ -41,7 +41,7 @@ def render_meeting_note(
         meeting_summary: Caller-generated summary (Summary + Key Decisions +
             Action Items, typically derived from the transcript by the
             /pull-granola-notes skill). When non-empty, prepended as a
-            ``## Meeting Summary`` section above the first H2 in the body.
+            ``# Meeting Summary`` section above the first H1 in the body.
             When empty, no Meeting Summary section is rendered — the template
             stays clean for cases where transcript-driven generation isn't
             available (cache-only mode, MCP failure, etc.).
@@ -96,14 +96,15 @@ def render_meeting_note(
 
 
 def _insert_meeting_summary(rendered: str, content: str) -> str:
-    """Insert ``## Meeting Summary`` immediately before the first H2 in the
-    body, or append it when no H2 exists.
+    """Insert ``# Meeting Summary`` immediately before the first H1 in the
+    body, or append it when no H1 exists.
 
-    Doesn't modify frontmatter or H1 preamble — just slots the section in
-    where the merger expects header tool sections to live.
+    Top-level sections (Prep Notes / Notes / Enhanced Notes / Transcript) are
+    H1 in the current convention; this slots Meeting Summary in just before
+    them so it appears at the top of the body when the merger places it.
     """
-    block = f"## Meeting Summary\n\n{content.strip()}\n\n"
-    match = re.search(r"^## ", rendered, re.MULTILINE)
+    block = f"# Meeting Summary\n\n{content.strip()}\n\n"
+    match = re.search(r"^# ", rendered, re.MULTILINE)
     if not match:
         return rendered.rstrip() + "\n\n" + block
     return rendered[:match.start()] + block + rendered[match.start():]

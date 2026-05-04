@@ -29,17 +29,17 @@ type:
 status: draft
 ---
 
-# {title}
+# Prep Notes
 
-## Notes
+# Notes
 
 {notes}
 
-## Enhanced Notes
+# Enhanced Notes
 
 {enhanced_notes}
 
-## Transcript
+# Transcript
 
 {transcript}
 """
@@ -65,13 +65,13 @@ class TestRenderMeetingNote(unittest.TestCase):
     def test_basic_rendering(self):
         meeting = self._make_meeting()
         result = render_meeting_note(meeting, template=SIMPLE_TEMPLATE)
-        self.assertIn("# Team Standup", result)
         self.assertIn("meeting-title: Team Standup", result)
         self.assertIn("date: 2026-03-15", result)
         self.assertIn("  - Alice", result)
         self.assertIn("  - Bob", result)
         self.assertIn("status: draft", result)
-        self.assertIn("# Meeting Notes", result)
+        # The notes_markdown content (which happens to contain its own H1) shows up in the Notes section
+        self.assertIn("Stuff discussed.", result)
 
     def test_enhanced_notes(self):
         meeting = self._make_meeting()
@@ -112,7 +112,7 @@ class TestRenderMeetingNote(unittest.TestCase):
     def test_missing_fields_produce_empty(self):
         meeting = Meeting(id="bare", title="Bare Meeting")
         result = render_meeting_note(meeting, template=SIMPLE_TEMPLATE)
-        self.assertIn("# Bare Meeting", result)
+        self.assertIn("meeting-title: Bare Meeting", result)
         # No "None" should appear in output
         self.assertNotIn("None", result)
 
@@ -120,7 +120,6 @@ class TestRenderMeetingNote(unittest.TestCase):
         meeting = self._make_meeting(title='Review: Q2 "Goals"')
         result = render_meeting_note(meeting, template=SIMPLE_TEMPLATE)
         self.assertIn('meeting-title: "Review: Q2 \\"Goals\\""', result)
-        self.assertIn('# Review: Q2 "Goals"', result)
 
     def test_empty_notes_renders_placeholder(self):
         meeting = self._make_meeting(
@@ -253,8 +252,8 @@ class TestFormatTranscript(unittest.TestCase):
 
 
 class TestMeetingSummaryInsertion(unittest.TestCase):
-    """``meeting_summary`` is injected as ``## Meeting Summary`` above the
-    first existing H2; omitted entirely when empty."""
+    """``meeting_summary`` is injected as ``# Meeting Summary`` above the
+    first existing H1; omitted entirely when empty."""
 
     def _make_meeting(self):
         return Meeting(
@@ -263,14 +262,14 @@ class TestMeetingSummaryInsertion(unittest.TestCase):
             calendar=CalendarEvent(start=parse_datetime("2026-05-08T10:00:00Z")),
         )
 
-    def test_summary_appears_before_first_h2(self):
+    def test_summary_appears_before_first_h1(self):
         out = render_meeting_note(
             self._make_meeting(),
             template=SIMPLE_TEMPLATE,
-            meeting_summary="### Summary\n\nKey takeaways.",
+            meeting_summary="## Summary\n\nKey takeaways.",
         )
-        self.assertIn("## Meeting Summary", out)
-        self.assertLess(out.index("## Meeting Summary"), out.index("## Notes"))
+        self.assertIn("# Meeting Summary", out)
+        self.assertLess(out.index("# Meeting Summary"), out.index("# Prep Notes"))
 
     def test_no_summary_section_when_empty(self):
         out = render_meeting_note(
@@ -278,7 +277,7 @@ class TestMeetingSummaryInsertion(unittest.TestCase):
             template=SIMPLE_TEMPLATE,
             meeting_summary="",
         )
-        self.assertNotIn("## Meeting Summary", out)
+        self.assertNotIn("# Meeting Summary", out)
 
     def test_whitespace_only_summary_treated_as_empty(self):
         out = render_meeting_note(
@@ -286,12 +285,12 @@ class TestMeetingSummaryInsertion(unittest.TestCase):
             template=SIMPLE_TEMPLATE,
             meeting_summary="   \n\n  ",
         )
-        self.assertNotIn("## Meeting Summary", out)
+        self.assertNotIn("# Meeting Summary", out)
 
-    def test_insert_helper_appends_when_no_h2(self):
-        body = "---\nfm: v\n---\n\n# Title\n\nFreeform body.\n"
+    def test_insert_helper_appends_when_no_h1(self):
+        body = "---\nfm: v\n---\n\nFreeform body.\n"
         result = _insert_meeting_summary(body, "summary text")
-        self.assertIn("## Meeting Summary", result)
+        self.assertIn("# Meeting Summary", result)
         self.assertTrue(result.endswith("summary text\n\n"))
 
 

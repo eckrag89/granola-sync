@@ -29,10 +29,10 @@ class RenderPrepNoteTests(unittest.TestCase):
         self.assertIn("status: draft", body)
         self.assertIn("- Alice", body)
         self.assertIn("- Bob", body)
-        self.assertIn("## Prep Notes", body)
-        self.assertNotIn("## Notes", body)
-        self.assertNotIn("## Enhanced Notes", body)
-        self.assertNotIn("## Transcript", body)
+        self.assertIn("# Prep Notes", body)
+        self.assertNotIn("# Notes", body)
+        self.assertNotIn("# Enhanced Notes", body)
+        self.assertNotIn("# Transcript", body)
 
     def test_empty_attendees_renders_explicit_empty_list(self) -> None:
         body = render_prep_note(title="Solo", date="2026-05-08", attendees=[])
@@ -117,7 +117,7 @@ class PrepCLITests(unittest.TestCase):
                     "date: 2026-05-08\n"
                     "meeting-title: Weekly Sync\n"
                     "---\n\n"
-                    "## Prep Notes\n"
+                    "# Prep Notes\n"
                 )
             rc, out = self._run(
                 [
@@ -160,7 +160,7 @@ class PrepCLITests(unittest.TestCase):
             with open(existing) as f:
                 content = f.read()
             self.assertNotIn("old prep content", content)
-            self.assertIn("## Prep Notes", content)
+            self.assertIn("# Prep Notes", content)
 
 
 if __name__ == "__main__":

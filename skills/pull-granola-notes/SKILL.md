@@ -13,9 +13,9 @@ Pull ALL available meeting data (private notes, AI summary, transcript, metadata
 
 The push subcommand merges into existing files instead of overwriting them. Sections are split by ownership:
 
-- **Tool-owned, header position** (top of body, above Prep Notes): `## Meeting Summary` — Claude generates this from the transcript during the pull (see step B.5). Replaced on every pull when generated; preserved when omitted.
-- **Tool-owned, footer position** (canonical order): `## Notes`, `## Enhanced Notes`, `## Transcript`. Replaced on every pull.
-- **User-owned** (preserved verbatim): `## Prep Notes`, any other H2 sections, H1 preamble, free text.
+- **Tool-owned, header position** (top of body, above Prep Notes): `# Meeting Summary` — Claude generates this from the transcript during the pull (see step B.5). Replaced on every pull when generated; preserved when omitted.
+- **Tool-owned, footer position** (canonical order): `# Notes`, `# Enhanced Notes`, `# Transcript`. Replaced on every pull.
+- **User-owned** (preserved verbatim): `# Prep Notes`, any other H1 sections the user adds, all H2/H3 nested content within those sections, and any free text before the first heading.
 
 This means the user can write a prep note ahead of the meeting (with `meeting-title` frontmatter set to the same title Granola will use), and `/pull-granola-notes` will land on that file via title-match, insert the Meeting Summary at the top, replace the tool sections at the bottom, and leave the prep notes untouched. Re-pulls of an already-populated note refresh the tool sections without disturbing anything else.
 
@@ -113,23 +113,23 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 
 ### B.5 Generate Meeting Summary [MUST when transcript present]
 
-Claude reads the transcript file directly (use the Read tool on the transcript path from step 6) and produces a `## Meeting Summary` block written to `/tmp/granola-sync-summary-<id8>.md`. The transcript is the source of truth — Granola's enhanced notes are reviewed separately in B.6.
+Claude reads the transcript file directly (use the Read tool on the transcript path from step 6) and produces a `# Meeting Summary` block written to `/tmp/granola-sync-summary-<id8>.md`. The transcript is the source of truth — Granola's enhanced notes are reviewed separately in B.6.
 
 If the transcript fetch failed in step 6 → SKIP this entire step, omit `--meeting-summary-file` in step 11. The merger preserves any prior Meeting Summary in re-pulls when this step is skipped.
 
-**Output format — write exactly this shape to the temp file:**
+**Output format — write exactly this shape to the temp file (the renderer wraps it under a `# Meeting Summary` H1, so subsections are H2):**
 
 ```markdown
-### Summary
+## Summary
 
 2-3 sentences capturing what was discussed and what changed. Focus on what the reader needs to remember; avoid blow-by-blow.
 
-### Key Decisions
+## Key Decisions
 
 - Decision 1
 - Decision 2
 
-### Action Items
+## Action Items
 
 - [ ] @Owner — Action item description
 - [ ] @Owner (?) — Item where attribution is uncertain
@@ -138,7 +138,7 @@ If the transcript fetch failed in step 6 → SKIP this entire step, omit `--meet
 
 If no decisions were made, write `- _(none)_` under Key Decisions rather than dropping the heading. Same for Action Items.
 
-#### Speaker attribution rule [MUST follow]
+### Speaker attribution rule [MUST follow]
 
 Speaker labels in the transcript (`**You:**` / `**Other:**`) reflect the MIC SOURCE on the recording, not necessarily the actual speaker. The note creator's mic picks up everyone in their physical room — so a `**You:**` line could be the note creator OR any colleague co-located with them.
 
@@ -245,10 +245,10 @@ If the transcript was empty/failed in step 6 → SKIP the audit; pass Granola's 
     with open(path) as f:
         body = f.read()
     sections = {}
-    for name, heading in [("meeting_summary", "## Meeting Summary"),
-                          ("notes", "## Notes"),
-                          ("enhanced_notes", "## Enhanced Notes"),
-                          ("transcript", "## Transcript")]:
+    for name, heading in [("meeting_summary", "# Meeting Summary"),
+                          ("notes", "# Notes"),
+                          ("enhanced_notes", "# Enhanced Notes"),
+                          ("transcript", "# Transcript")]:
         m = re.search(rf"{re.escape(heading)}\n+(.*?)(?=\n## |\Z)", body, re.DOTALL)
         content = (m.group(1) if m else "").strip()
         if not content or content == "_(no notes taken)_":
@@ -288,7 +288,7 @@ If the transcript was empty/failed in step 6 → SKIP the audit; pass Granola's 
 - CLI exit code 3 on push → multi-match path, handle per step 10.
 - Any CLI exit code other than 0 or 3 → STOP, show stderr, do not report success.
 
-## Notes
+# Notes
 
 - All paths must be absolute.
 - The CLI handles path resolution, filename generation, YAML escaping, and template rendering. Do not hand-build the output path.

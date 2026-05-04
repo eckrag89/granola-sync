@@ -22,16 +22,16 @@ class MergeFilesTests(unittest.TestCase):
             status: draft
             ---
 
-            ## Prep Notes
+            # Prep Notes
 
             - Discuss roadmap
             - Ask about Q3 OKRs
 
-            ## Notes
+            # Notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
-            ## Transcript
+            # Transcript
             """
         )
         new_render = _dedent(
@@ -46,19 +46,17 @@ class MergeFilesTests(unittest.TestCase):
             status: draft
             ---
 
-            # Weekly Sync
+            # Prep Notes
 
-            ## Prep Notes
-
-            ## Notes
+            # Notes
 
             Real notes content.
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             AI summary.
 
-            ## Transcript
+            # Transcript
 
             **You:** Hello.
             """
@@ -83,7 +81,7 @@ class MergeFilesTests(unittest.TestCase):
             status: reviewed
             ---
 
-            ## Prep Notes
+            # Prep Notes
 
             prep
             """
@@ -99,9 +97,7 @@ class MergeFilesTests(unittest.TestCase):
             status: draft
             ---
 
-            # Client Intro
-
-            ## Notes
+            # Notes
 
             n
             """
@@ -125,7 +121,7 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Standup
             ---
 
-            ## Prep Notes
+            # Prep Notes
 
             prep stuff
             """
@@ -136,15 +132,15 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Standup
             ---
 
-            ## Notes
+            # Notes
 
             cached notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             summary
 
-            ## Transcript
+            # Transcript
 
             transcript text
             """
@@ -157,32 +153,37 @@ class MergeFilesTests(unittest.TestCase):
         self.assertIn("transcript text", merged)
 
         # Order: Prep Notes (user) first, then canonical tool order
-        idx_prep = merged.index("## Prep Notes")
-        idx_notes = merged.index("## Notes")
-        idx_enh = merged.index("## Enhanced Notes")
-        idx_tx = merged.index("## Transcript")
+        idx_prep = merged.index("# Prep Notes")
+        idx_notes = merged.index("# Notes")
+        idx_enh = merged.index("# Enhanced Notes")
+        idx_tx = merged.index("# Transcript")
         self.assertLess(idx_prep, idx_notes)
         self.assertLess(idx_notes, idx_enh)
         self.assertLess(idx_enh, idx_tx)
 
-    def test_legacy_h1_notes_preamble_preserved(self) -> None:
-        # A pre-merge note style: H1 "# Notes" with prep content, then H2
-        # tool sections waiting to be filled.
+    def test_user_h2_subheadings_preserved_under_their_h1_section(self) -> None:
+        # User content under # Prep Notes uses H2/H3 sub-headings. The merger
+        # treats everything inside # Prep Notes as one user-owned blob —
+        # sub-headings are not splitters and ride along with their parent.
         existing = _dedent(
             """
             ---
             meeting-title: 1-1 with Alice
             ---
 
-            # Notes
+            # Prep Notes
 
             ## General Banter
 
             * how was the trip
 
-            ## Enhanced Notes
+            ## PG&E Action Items
 
-            ## Transcript
+            * cleanup prototype
+
+            # Enhanced Notes
+
+            stale enhanced
             """
         )
         new_render = _dedent(
@@ -191,34 +192,21 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: 1-1 with Alice
             ---
 
-            # 1-1 with Alice
+            # Enhanced Notes
 
-            ## Notes
-
-            cached notes
-
-            ## Enhanced Notes
-
-            summary
-
-            ## Transcript
-
-            transcript
+            fresh enhanced
             """
         )
         merged = merge_files(existing, new_render)
 
-        # Legacy H1 + sub-H2 prep content preserved verbatim
-        self.assertIn("# Notes", merged)
+        # All user H2 sub-headings under # Prep Notes preserved verbatim
         self.assertIn("## General Banter", merged)
         self.assertIn("* how was the trip", merged)
-        # Tool sections that DID exist (Enhanced Notes, Transcript) replaced
-        self.assertIn("summary", merged)
-        self.assertIn("transcript", merged)
-        # Tool section that did NOT exist (## Notes) gets appended
-        self.assertIn("cached notes", merged)
-        # New H1 from incoming render is dropped (existing preamble wins)
-        self.assertNotIn("# 1-1 with Alice", merged)
+        self.assertIn("## PG&E Action Items", merged)
+        self.assertIn("* cleanup prototype", merged)
+        # Tool section content replaced
+        self.assertIn("fresh enhanced", merged)
+        self.assertNotIn("stale enhanced", merged)
 
     def test_repull_replaces_stale_tool_content(self) -> None:
         existing = _dedent(
@@ -227,15 +215,15 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Standup
             ---
 
-            ## Notes
+            # Notes
 
             stale notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             stale summary
 
-            ## Transcript
+            # Transcript
 
             stale transcript
             """
@@ -246,15 +234,15 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Standup
             ---
 
-            ## Notes
+            # Notes
 
             fresh notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             fresh summary
 
-            ## Transcript
+            # Transcript
 
             fresh transcript
             """
@@ -267,7 +255,7 @@ class MergeFilesTests(unittest.TestCase):
             self.assertIn(fresh, merged)
 
     def test_existing_file_without_frontmatter_gets_full_frontmatter(self) -> None:
-        existing = "## Prep Notes\n\nstuff\n"
+        existing = "# Prep Notes\n\nstuff\n"
         new_render = _dedent(
             """
             ---
@@ -275,7 +263,7 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Foo
             ---
 
-            ## Notes
+            # Notes
 
             n
             """
@@ -296,13 +284,13 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: 1-1
             ---
 
-            ## Prep Notes
+            # Prep Notes
 
             user prep
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
-            ## Transcript
+            # Transcript
             """
         )
         new_render = _dedent(
@@ -311,23 +299,23 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: 1-1
             ---
 
-            ## Notes
+            # Notes
 
             cached notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             summary
 
-            ## Transcript
+            # Transcript
 
             transcript
             """
         )
         merged = merge_files(existing, new_render)
-        idx_notes = merged.index("## Notes")
-        idx_enh = merged.index("## Enhanced Notes")
-        idx_tx = merged.index("## Transcript")
+        idx_notes = merged.index("# Notes")
+        idx_enh = merged.index("# Enhanced Notes")
+        idx_tx = merged.index("# Transcript")
         self.assertLess(idx_notes, idx_enh)
         self.assertLess(idx_enh, idx_tx)
         self.assertIn("user prep", merged)
@@ -342,15 +330,15 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Test
             ---
 
-            ## Notes
+            # Notes
 
-            ## Prep Notes
+            # Prep Notes
 
             prep at the bottom
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
-            ## Transcript
+            # Transcript
             """
         )
         new_render = _dedent(
@@ -359,15 +347,15 @@ class MergeFilesTests(unittest.TestCase):
             meeting-title: Test
             ---
 
-            ## Notes
+            # Notes
 
             new notes
 
-            ## Enhanced Notes
+            # Enhanced Notes
 
             new enhanced
 
-            ## Transcript
+            # Transcript
 
             new transcript
             """
@@ -375,13 +363,13 @@ class MergeFilesTests(unittest.TestCase):
         merged = merge_files(existing, new_render)
         self.assertIn("prep at the bottom", merged)
         self.assertLess(
-            merged.index("## Notes"),
-            merged.index("## Prep Notes"),
+            merged.index("# Notes"),
+            merged.index("# Prep Notes"),
         )
 
 
 class MeetingSummaryHeaderSectionTests(unittest.TestCase):
-    """## Meeting Summary is a header section — always lives at the top of
+    """# Meeting Summary is a header section — always lives at the top of
     the body, even when other tool sections sit at the bottom."""
 
     def test_inserts_at_top_above_existing_prep_notes(self) -> None:
@@ -391,7 +379,7 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Prep Notes
+            # Prep Notes
 
             user prep
             """
@@ -402,33 +390,35 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Meeting Summary
+            # Meeting Summary
 
             Two-line summary.
 
-            ## Notes
+            # Notes
 
             n
             """
         )
         merged = merge_files(existing, new_render)
         self.assertLess(
-            merged.index("## Meeting Summary"),
-            merged.index("## Prep Notes"),
+            merged.index("# Meeting Summary"),
+            merged.index("# Prep Notes"),
         )
         self.assertIn("user prep", merged)
         self.assertIn("Two-line summary.", merged)
 
-    def test_inserts_after_h1_preamble(self) -> None:
+    def test_inserts_after_free_text_preamble(self) -> None:
+        # Free text before any H1 is treated as preamble — Meeting Summary
+        # slots in just after it, before the first H1 user section.
         existing = _dedent(
             """
             ---
             meeting-title: Sync
             ---
 
-            # Custom H1
+            Quick context paragraph.
 
-            ## Prep Notes
+            # Prep Notes
 
             prep
             """
@@ -439,20 +429,20 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Meeting Summary
+            # Meeting Summary
 
             Summary text.
 
-            ## Notes
+            # Notes
 
             n
             """
         )
         merged = merge_files(existing, new_render)
-        idx_h1 = merged.index("# Custom H1")
-        idx_summary = merged.index("## Meeting Summary")
-        idx_prep = merged.index("## Prep Notes")
-        self.assertLess(idx_h1, idx_summary)
+        idx_preamble = merged.index("Quick context paragraph.")
+        idx_summary = merged.index("# Meeting Summary")
+        idx_prep = merged.index("# Prep Notes")
+        self.assertLess(idx_preamble, idx_summary)
         self.assertLess(idx_summary, idx_prep)
 
     def test_repull_replaces_existing_meeting_summary_in_place(self) -> None:
@@ -462,11 +452,11 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Meeting Summary
+            # Meeting Summary
 
             old summary
 
-            ## Prep Notes
+            # Prep Notes
 
             prep
             """
@@ -477,11 +467,11 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Meeting Summary
+            # Meeting Summary
 
             new summary
 
-            ## Notes
+            # Notes
 
             n
             """
@@ -500,11 +490,11 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Meeting Summary
+            # Meeting Summary
 
             preserved summary
 
-            ## Prep Notes
+            # Prep Notes
 
             prep
             """
@@ -515,7 +505,7 @@ class MeetingSummaryHeaderSectionTests(unittest.TestCase):
             meeting-title: Sync
             ---
 
-            ## Notes
+            # Notes
 
             n
             """

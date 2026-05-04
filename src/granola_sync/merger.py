@@ -1,17 +1,19 @@
 """Merge tool-generated meeting notes into an existing user file.
 
 Section ownership:
-  - Tool-owned H2 headings: ``## Meeting Summary``, ``## Notes``,
-    ``## Enhanced Notes``, ``## Transcript``. Replaced wholesale on every push.
+  - Tool-owned H1 headings: ``# Meeting Summary``, ``# Notes``,
+    ``# Enhanced Notes``, ``# Transcript``. Replaced wholesale on every push.
   - Everything else is user-owned and preserved verbatim. That includes
-    ``## Prep Notes``, custom H2 sections, any H1 preamble, and free text.
+    ``# Prep Notes`` and any other H1 sections the user adds, plus all H2/H3
+    nested content within those sections, and any free text before the first
+    heading.
 
 Tool sections in the existing file keep their positions when the user has
 chosen to put them somewhere specific. Tool sections that are NOT in the
-existing file get inserted in canonical order — but ``## Meeting Summary`` is
-treated as a header section and inserted at the TOP of the body (after any H1
+existing file get inserted in canonical order — but ``# Meeting Summary`` is
+treated as a header section and inserted at the TOP of the body (after any
 preamble), since its purpose is to be the first thing the reader sees.
-``## Notes`` / ``## Enhanced Notes`` / ``## Transcript`` are footer sections;
+``# Notes`` / ``# Enhanced Notes`` / ``# Transcript`` are footer sections;
 when missing, they slot in just before the next canonical sibling that DOES
 exist (or at the end if none exist).
 
@@ -34,7 +36,7 @@ TOOL_HEADER_HEADINGS = frozenset({"meeting summary"})
 TOOL_OWNED_FRONTMATTER_FIELDS = ("date", "meeting-title", "attendees")
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n?", re.DOTALL)
-_H2_LINE_RE = re.compile(r"^## +(.*?)\s*$", re.MULTILINE)
+_H1_LINE_RE = re.compile(r"^# +(.*?)\s*$", re.MULTILINE)
 _KEY_LINE_RE = re.compile(r"^[A-Za-z0-9_-]+\s*:")
 
 
@@ -175,9 +177,11 @@ def _split_sections(body: str) -> list[tuple[Optional[str], str]]:
     """Split a body into ``[(heading_or_None, content), ...]`` in source order.
 
     The first tuple has ``heading=None`` when the body has any text before the
-    first H2 (e.g. an H1 title or preamble paragraphs).
+    first H1 (free preamble paragraphs, blank lines after frontmatter, etc.).
+    H2 and lower headings are NOT splitters — they live inside whatever H1
+    section they fall under.
     """
-    matches = list(_H2_LINE_RE.finditer(body))
+    matches = list(_H1_LINE_RE.finditer(body))
     if not matches:
         return [(None, body)]
     sections: list[tuple[Optional[str], str]] = []

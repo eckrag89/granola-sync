@@ -25,7 +25,7 @@ class FindExistingMatchTests(unittest.TestCase):
                 status: draft
                 ---
 
-                ## Prep Notes
+                # Prep Notes
                 """,
             )
             matches = find_existing_match(root, "1-1 with Alice")

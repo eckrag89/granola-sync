@@ -15,7 +15,7 @@ This skill calls the Microsoft 365 MCP server (`outlook_calendar_search`). Other
 
 ## Section ownership (carries over from /pull-granola-notes)
 
-The prep note is intentionally minimal: frontmatter plus a single `## Prep Notes` heading. When granola-sync later pulls the meeting, the merger appends `## Notes` / `## Enhanced Notes` / `## Transcript` in canonical order without disturbing what the user wrote under `## Prep Notes`.
+The prep note is intentionally minimal: frontmatter plus a single `# Prep Notes` heading. When granola-sync later pulls the meeting, the merger appends `# Notes` / `# Enhanced Notes` / `# Transcript` in canonical order without disturbing what the user wrote under `# Prep Notes`.
 
 ## Important Paths
 
@@ -112,9 +112,9 @@ Confirm to the user with the absolute path that was created (or the existing pat
 - CLI exit code 4 → handled per step E.
 - Any other non-zero CLI exit → STOP, show stderr.
 
-## Notes
+# Notes
 
 - All paths must be absolute when passed to the CLI.
 - `--outlook-event-id` is stored in frontmatter today but not used as a match key — title + date is the v1 contract. Storing it now means future matcher upgrades can use it without re-touching prep notes.
-- The created file body is just `## Prep Notes`. Granola-sync's merger appends `## Notes` / `## Enhanced Notes` / `## Transcript` in canonical order on the first pull.
+- The created file body is just `# Prep Notes`. Granola-sync's merger appends `# Notes` / `# Enhanced Notes` / `# Transcript` in canonical order on the first pull.
 - `$ARGUMENTS` may be empty: ask the user what meeting to prep for. Do not list the calendar.

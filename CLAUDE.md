@@ -80,6 +80,7 @@ python3 -m granola_sync push <meeting_id> [--enhanced-notes TEXT]
 python3 -m granola_sync prep --title TITLE --date YYYY-MM-DD
                         [--attendees JSON_OR_CSV] [--outlook-event-id ID]
                         [--output-folder PATH] [--output-title BASE] [--force]
+python3 -m granola_sync migrate-headings --folder PATH [--apply]
 ```
 
 ### Phase 3 CLI flags
@@ -88,7 +89,8 @@ python3 -m granola_sync prep --title TITLE --date YYYY-MM-DD
 - `--meeting-data PATH` — JSON file with meeting metadata; skips cache lookup entirely (MCP-only mode)
 - `--force` — bypass match search + merge; write a fresh template at the default path, replacing any existing file (push only)
 - `--dry-run` — print resolved target path without writing (push only)
-- **Match + merge behavior**: push searches the destination folder recursively for an existing note whose `meeting-title` frontmatter matches; that file becomes the target. When the target exists, content is merged — tool-owned H2 sections replaced, user-owned sections preserved. Tool-owned headings: `## Meeting Summary` (header position, top of body) plus `## Notes` / `## Enhanced Notes` / `## Transcript` (footer positions, canonical order). User-owned: `## Prep Notes`, custom H2s, H1 preamble. Re-pulls without a fresh `--meeting-summary` preserve any prior summary already in the file.
+- **Match + merge behavior**: push searches the destination folder recursively for an existing note whose `meeting-title` frontmatter matches; that file becomes the target. When the target exists, content is merged — tool-owned H1 sections replaced, user-owned sections preserved. Tool-owned headings: `# Meeting Summary` (header position, top of body) plus `# Notes` / `# Enhanced Notes` / `# Transcript` (footer positions, canonical order). User-owned: `# Prep Notes`, any other H1 the user adds, all H2/H3 nested content within those sections, and free text before the first heading. Re-pulls without a fresh `--meeting-summary` preserve any prior summary already in the file.
+- **`migrate-headings` subcommand**: one-time migration that bumps tool-section headings from H2 to H1 in pre-existing meeting notes (e.g. files written before the H1 cutover). Drops legacy `# {title}` H1 lines, renames legacy `# Notes` (the old prep-content wrapper) to `# Prep Notes`, and only promotes EXACT tool-section headings — user H2 sub-headings inside prep content are left alone. Skips Obsidian index files (`*Summary.md`, `*Home.md`, etc.). Idempotent.
 - **Multi-match**: when 2+ files match by title, push exits with code 3 and prints `{"multi_match": true, "candidates": [...], "default_path": "..."}` so the caller can disambiguate.
 
 ## Key Data Locations

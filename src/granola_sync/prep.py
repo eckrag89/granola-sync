@@ -2,12 +2,12 @@
 
 Prep notes are created BEFORE the meeting happens — there is no Granola
 record yet. The file is intentionally minimal: frontmatter sourced from
-the calendar event plus a single ``## Prep Notes`` heading. When
+the calendar event plus a single ``# Prep Notes`` heading. When
 ``/pull-granola-notes`` later runs and matches the prep note (by
 ``meeting-title`` + ``date`` frontmatter), the merger appends the
-``## Notes`` / ``## Enhanced Notes`` / ``## Transcript`` sections in
+``# Notes`` / ``# Enhanced Notes`` / ``# Transcript`` sections in
 canonical order without disturbing whatever the user wrote under
-``## Prep Notes``.
+``# Prep Notes``.
 """
 
 from __future__ import annotations
@@ -52,6 +52,6 @@ def render_prep_note(
         "status: draft\n"
         "---\n"
         "\n"
-        "## Prep Notes\n"
+        "# Prep Notes\n"
         "\n"
     )
