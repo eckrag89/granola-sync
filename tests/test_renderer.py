@@ -1,5 +1,6 @@
 """Tests for template rendering."""
 
+import textwrap
 import unittest
 
 from granola_sync.models import (
@@ -12,6 +13,7 @@ from granola_sync.models import (
 from granola_sync.renderer import (
     _escape_yaml_title,
     _format_transcript,
+    _insert_meeting_summary,
     _participants_yaml_list,
     render_meeting_note,
 )
@@ -248,6 +250,49 @@ class TestFormatTranscript(unittest.TestCase):
     def test_empty_transcript(self):
         meeting = Meeting()
         self.assertEqual(_format_transcript(meeting), "")
+
+
+class TestMeetingSummaryInsertion(unittest.TestCase):
+    """``meeting_summary`` is injected as ``## Meeting Summary`` above the
+    first existing H2; omitted entirely when empty."""
+
+    def _make_meeting(self):
+        return Meeting(
+            id="x",
+            title="Sync",
+            calendar=CalendarEvent(start=parse_datetime("2026-05-08T10:00:00Z")),
+        )
+
+    def test_summary_appears_before_first_h2(self):
+        out = render_meeting_note(
+            self._make_meeting(),
+            template=SIMPLE_TEMPLATE,
+            meeting_summary="### Summary\n\nKey takeaways.",
+        )
+        self.assertIn("## Meeting Summary", out)
+        self.assertLess(out.index("## Meeting Summary"), out.index("## Notes"))
+
+    def test_no_summary_section_when_empty(self):
+        out = render_meeting_note(
+            self._make_meeting(),
+            template=SIMPLE_TEMPLATE,
+            meeting_summary="",
+        )
+        self.assertNotIn("## Meeting Summary", out)
+
+    def test_whitespace_only_summary_treated_as_empty(self):
+        out = render_meeting_note(
+            self._make_meeting(),
+            template=SIMPLE_TEMPLATE,
+            meeting_summary="   \n\n  ",
+        )
+        self.assertNotIn("## Meeting Summary", out)
+
+    def test_insert_helper_appends_when_no_h2(self):
+        body = "---\nfm: v\n---\n\n# Title\n\nFreeform body.\n"
+        result = _insert_meeting_summary(body, "summary text")
+        self.assertIn("## Meeting Summary", result)
+        self.assertTrue(result.endswith("summary text\n\n"))
 
 
 if __name__ == "__main__":

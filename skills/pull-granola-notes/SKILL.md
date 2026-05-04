@@ -13,10 +13,11 @@ Pull ALL available meeting data (private notes, AI summary, transcript, metadata
 
 The push subcommand merges into existing files instead of overwriting them. Sections are split by ownership:
 
-- **Tool-owned** (replaced on every pull): `## Notes`, `## Enhanced Notes`, `## Transcript`
-- **User-owned** (preserved verbatim): `## Prep Notes`, any other H2 sections, H1 preamble, free text
+- **Tool-owned, header position** (top of body, above Prep Notes): `## Meeting Summary` — Claude generates this from the transcript during the pull (see step B.5). Replaced on every pull when generated; preserved when omitted.
+- **Tool-owned, footer position** (canonical order): `## Notes`, `## Enhanced Notes`, `## Transcript`. Replaced on every pull.
+- **User-owned** (preserved verbatim): `## Prep Notes`, any other H2 sections, H1 preamble, free text.
 
-This means the user can write a prep note ahead of the meeting (with `meeting-title` frontmatter set to the same title Granola will use), and `/pull-granola-notes` will land on that file via title-match, replace the empty tool sections, and leave the prep notes untouched. Re-pulls of an already-populated note refresh the tool sections without disturbing anything else.
+This means the user can write a prep note ahead of the meeting (with `meeting-title` frontmatter set to the same title Granola will use), and `/pull-granola-notes` will land on that file via title-match, insert the Meeting Summary at the top, replace the tool sections at the bottom, and leave the prep notes untouched. Re-pulls of an already-populated note refresh the tool sections without disturbing anything else.
 
 Frontmatter merges on the same rule: `date`, `meeting-title`, and `attendees` update from the new render when non-empty; user-set fields (`type`, `status`, `outlook-event-id`, custom keys) are preserved.
 
@@ -110,9 +111,79 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
    - **Large response (exceeds token limit):** the tool result will reference a saved file path. Use that path directly as `--transcript-file` — **MUST NOT** reparse it; the CLI unwraps the JSON envelope and normalizes `Me:`/`Them:` markers.
    - **MCP error or timeout:** leave transcript empty and note the failure in the final report.
 
+### B.5 Generate Meeting Summary [MUST when transcript present]
+
+Claude reads the transcript file directly (use the Read tool on the transcript path from step 6) and produces a `## Meeting Summary` block written to `/tmp/granola-sync-summary-<id8>.md`. The transcript is the source of truth — Granola's enhanced notes are reviewed separately in B.6.
+
+If the transcript fetch failed in step 6 → SKIP this entire step, omit `--meeting-summary-file` in step 11. The merger preserves any prior Meeting Summary in re-pulls when this step is skipped.
+
+**Output format — write exactly this shape to the temp file:**
+
+```markdown
+### Summary
+
+2-3 sentences capturing what was discussed and what changed. Focus on what the reader needs to remember; avoid blow-by-blow.
+
+### Key Decisions
+
+- Decision 1
+- Decision 2
+
+### Action Items
+
+- [ ] @Owner — Action item description
+- [ ] @Owner (?) — Item where attribution is uncertain
+- [ ] @Team — Item with no clear single owner
+```
+
+If no decisions were made, write `- _(none)_` under Key Decisions rather than dropping the heading. Same for Action Items.
+
+#### Speaker attribution rule [MUST follow]
+
+Speaker labels in the transcript (`**You:**` / `**Other:**`) reflect the MIC SOURCE on the recording, not necessarily the actual speaker. The note creator's mic picks up everyone in their physical room — so a `**You:**` line could be the note creator OR any colleague co-located with them.
+
+When attributing action items to specific people:
+
+- Default conservative. Use `@Team` when the actual speaker can't be inferred from context.
+- Use surrounding context to disambiguate: if "Alice, can you handle that?" is followed by an affirmative on the You line, that's `@Alice`, not the note creator. If someone is addressed by name or self-identifies, use that.
+- When uncertain but a reasonable guess exists, append `(?)` — e.g. `@Alice (?)` for "transcript suggests Alice but mic was the note creator's, can't confirm." The user resolves later in their morning/evening review.
+- DO NOT ask the user to confirm during the pull — this is intended to run in the background.
+
+### B.6 Audit Enhanced Notes [MUST]
+
+Claude compares Granola's enhanced notes (the `summary` text from step 5) against the transcript content. The goal is calibration: surface where Granola misrepresented what happened, NOT to rewrite what Granola got right.
+
+**Material edit (warrants change + callout):**
+- Action items the transcript clearly raised but Granola omitted
+- Wrong attribution (Granola says X agreed/will-do, transcript shows Y)
+- Missing key decisions
+- Factual inconsistencies with what was said
+
+**Not material (leave verbatim):**
+- Different summary phrasing
+- Different bullet ordering
+- Adding/removing emphasis
+
+**If NO material edits:** write Granola's `summary` text VERBATIM to `/tmp/granola-sync-enhanced-<id8>.md`. No callout. The absence of a callout is the trust signal — when the user sees no callout, they know Granola was accurate.
+
+**If material edits:** write a modified version to the same file with a collapsed Obsidian callout at the TOP listing the changes, then Granola's content with edits applied inline. Format:
+
+```markdown
+> [!note]- Claude edits to Granola's notes
+> - Reattributed action item "send the API doc by Friday" Bob -> Alice (transcript: Alice volunteered)
+> - Added missing decision: launch postponed to June 15
+> - Removed: claim that the note creator agreed to review (no transcript support)
+
+[Granola's enhanced notes content with edits applied inline]
+```
+
+Apply the same speaker attribution rule from B.5 to attribution edits.
+
+If the transcript was empty/failed in step 6 → SKIP the audit; pass Granola's notes through verbatim. Note "transcript unavailable, no audit performed" in the final report (step 13).
+
 ### C. Write temp files
 
-7. Write the extracted `summary` to `/tmp/granola-sync-enhanced-<id8>.md`.
+7. Write the extracted `summary` to `/tmp/granola-sync-enhanced-<id8>.md` (or the audited version from step B.6 if edits were made).
 8. Write the JSON meeting-data file to `/tmp/granola-sync-meeting-<id8>.json` ONLY when the cache search in step A returned nothing (MCP-only mode). Shape:
    ```json
    {"id": "...", "title": "...", "date": "YYYY-MM-DD",
@@ -152,11 +223,15 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
       --enhanced-notes-file /tmp/granola-sync-enhanced-<id8>.md \
       --transcript-file <transcript path from step 6> \
       --participants '<json array from step 5>' \
+      [--meeting-summary-file /tmp/granola-sync-summary-<id8>.md] \
       [--meeting-data /tmp/granola-sync-meeting-<id8>.json] \
       [--output-folder "<absolute path>"] \
       [--output-title "<name>"] \
       [--force]
     ```
+
+    Include `--meeting-summary-file` only when B.5 produced a file (transcript was available). Omit it otherwise — the merger preserves any prior Meeting Summary on the existing file.
+
     Capture the `Pushed to: <path>` line.
 
 ### F. Post-push verification [MUST]
@@ -170,7 +245,8 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
     with open(path) as f:
         body = f.read()
     sections = {}
-    for name, heading in [("notes", "## Notes"),
+    for name, heading in [("meeting_summary", "## Meeting Summary"),
+                          ("notes", "## Notes"),
                           ("enhanced_notes", "## Enhanced Notes"),
                           ("transcript", "## Transcript")]:
         m = re.search(rf"{re.escape(heading)}\n+(.*?)(?=\n## |\Z)", body, re.DOTALL)
@@ -187,14 +263,15 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 
     ```
     Pushed to: <path>
+    - Meeting Summary: populated (X chars, generated this run) | preserved (prior pull) | skipped — <reason>
     - Notes: populated (1234 chars) | empty — <reason>
-    - Enhanced Notes: populated (5678 chars) | empty — <reason>
+    - Enhanced Notes: populated (5678 chars, audit: <no edits | N edits, see callout>) | empty — <reason>
     - Transcript: populated (89012 chars) | empty — <reason>
     Data sources: cache | MCP | both
     Participants: <count> (source: MCP | cache)
     ```
 
-    Where `<reason>` is specific (e.g. `empty — cache had no summary and MCP summary was blank`, `empty — MCP transcript call failed`).
+    Where `<reason>` is specific (e.g. `empty — cache had no summary and MCP summary was blank`, `empty — MCP transcript call failed`, `skipped — transcript unavailable, no summary generated this run`).
 
 14. **MUST NOT claim a section is populated without verification.** If the file read fails, say so explicitly.
 
@@ -206,7 +283,7 @@ When `<selector>` is a relative phrase ("the one before that", "same as last tim
 
 - Both cache and MCP unavailable → STOP after step A.
 - MCP `get_meetings` fails → enhanced notes empty; still push if other sections have content; report "empty — MCP get_meetings failed" in step 13.
-- MCP `get_meeting_transcript` fails → transcript empty; same handling.
+- MCP `get_meeting_transcript` fails → transcript empty; SKIP B.5 (no summary generated) and SKIP B.6 audit (pass Granola notes verbatim); same handling for the push, but report both as `skipped — transcript unavailable`.
 - Unexpected XML tag missing (e.g. `<summary>` not in response) → treat as empty for that field, note in report.
 - CLI exit code 3 on push → multi-match path, handle per step 10.
 - Any CLI exit code other than 0 or 3 → STOP, show stderr, do not report success.

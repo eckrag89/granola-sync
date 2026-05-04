@@ -88,7 +88,7 @@ python3 -m granola_sync prep --title TITLE --date YYYY-MM-DD
 - `--meeting-data PATH` — JSON file with meeting metadata; skips cache lookup entirely (MCP-only mode)
 - `--force` — bypass match search + merge; write a fresh template at the default path, replacing any existing file (push only)
 - `--dry-run` — print resolved target path without writing (push only)
-- **Match + merge behavior**: push searches the destination folder recursively for an existing note whose `meeting-title` frontmatter matches; that file becomes the target. When the target exists, content is merged — tool-owned H2 sections (`## Notes`, `## Enhanced Notes`, `## Transcript`) replaced, user-owned sections (`## Prep Notes`, custom content) preserved.
+- **Match + merge behavior**: push searches the destination folder recursively for an existing note whose `meeting-title` frontmatter matches; that file becomes the target. When the target exists, content is merged — tool-owned H2 sections replaced, user-owned sections preserved. Tool-owned headings: `## Meeting Summary` (header position, top of body) plus `## Notes` / `## Enhanced Notes` / `## Transcript` (footer positions, canonical order). User-owned: `## Prep Notes`, custom H2s, H1 preamble. Re-pulls without a fresh `--meeting-summary` preserve any prior summary already in the file.
 - **Multi-match**: when 2+ files match by title, push exits with code 3 and prints `{"multi_match": true, "candidates": [...], "default_path": "..."}` so the caller can disambiguate.
 
 ## Key Data Locations

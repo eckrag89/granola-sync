@@ -1,10 +1,19 @@
 """Merge tool-generated meeting notes into an existing user file.
 
 Section ownership:
-  - Tool-owned H2 headings: ``## Notes``, ``## Enhanced Notes``, ``## Transcript``.
-    Replaced wholesale on every push.
+  - Tool-owned H2 headings: ``## Meeting Summary``, ``## Notes``,
+    ``## Enhanced Notes``, ``## Transcript``. Replaced wholesale on every push.
   - Everything else is user-owned and preserved verbatim. That includes
     ``## Prep Notes``, custom H2 sections, any H1 preamble, and free text.
+
+Tool sections in the existing file keep their positions when the user has
+chosen to put them somewhere specific. Tool sections that are NOT in the
+existing file get inserted in canonical order — but ``## Meeting Summary`` is
+treated as a header section and inserted at the TOP of the body (after any H1
+preamble), since its purpose is to be the first thing the reader sees.
+``## Notes`` / ``## Enhanced Notes`` / ``## Transcript`` are footer sections;
+when missing, they slot in just before the next canonical sibling that DOES
+exist (or at the end if none exist).
 
 Frontmatter merging: keys listed in ``TOOL_OWNED_FRONTMATTER_FIELDS`` update
 when the incoming render has a non-empty value. All other fields (and the
@@ -20,7 +29,8 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-TOOL_OWNED_HEADINGS = ("notes", "enhanced notes", "transcript")
+TOOL_OWNED_HEADINGS = ("meeting summary", "notes", "enhanced notes", "transcript")
+TOOL_HEADER_HEADINGS = frozenset({"meeting summary"})
 TOOL_OWNED_FRONTMATTER_FIELDS = ("date", "meeting-title", "attendees")
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n?", re.DOTALL)
@@ -69,19 +79,29 @@ def merge_files(existing: str, new_render: str) -> str:
         else:
             rebuilt.append(content)
 
-    # Insert tool sections that weren't already present, anchored on the next
-    # canonical sibling that IS present so the final layout reads in canonical
-    # order. Existing tool sections keep their original position; newcomers
-    # slot in where their siblings expect them.
+    # Track where in `rebuilt` headers should land — at the top, but after any
+    # H1 preamble the user has at the start of the body.
+    header_insert_pos = 0
+    if existing_sections and existing_sections[0][0] is None and existing_sections[0][1].strip():
+        header_insert_pos = 1
+
+    # Insert tool sections that weren't already present. Header sections go to
+    # the top; footer sections anchor on the next canonical sibling so the
+    # final layout reads in canonical order. Existing tool sections keep their
+    # original positions throughout.
     for canonical in TOOL_OWNED_HEADINGS:
         if canonical in tool_positions or canonical not in new_tool:
             continue
-        successors = TOOL_OWNED_HEADINGS[TOOL_OWNED_HEADINGS.index(canonical) + 1:]
-        insert_pos = len(rebuilt)
-        for succ in successors:
-            if succ in tool_positions:
-                insert_pos = tool_positions[succ]
-                break
+        if canonical in TOOL_HEADER_HEADINGS:
+            insert_pos = header_insert_pos
+            header_insert_pos += 1
+        else:
+            successors = TOOL_OWNED_HEADINGS[TOOL_OWNED_HEADINGS.index(canonical) + 1:]
+            insert_pos = len(rebuilt)
+            for succ in successors:
+                if succ in tool_positions:
+                    insert_pos = tool_positions[succ]
+                    break
         rebuilt.insert(insert_pos, new_tool[canonical])
         for k, v in list(tool_positions.items()):
             if v >= insert_pos:

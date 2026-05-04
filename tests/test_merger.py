@@ -380,5 +380,149 @@ class MergeFilesTests(unittest.TestCase):
         )
 
 
+class MeetingSummaryHeaderSectionTests(unittest.TestCase):
+    """## Meeting Summary is a header section — always lives at the top of
+    the body, even when other tool sections sit at the bottom."""
+
+    def test_inserts_at_top_above_existing_prep_notes(self) -> None:
+        existing = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Prep Notes
+
+            user prep
+            """
+        )
+        new_render = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Meeting Summary
+
+            Two-line summary.
+
+            ## Notes
+
+            n
+            """
+        )
+        merged = merge_files(existing, new_render)
+        self.assertLess(
+            merged.index("## Meeting Summary"),
+            merged.index("## Prep Notes"),
+        )
+        self.assertIn("user prep", merged)
+        self.assertIn("Two-line summary.", merged)
+
+    def test_inserts_after_h1_preamble(self) -> None:
+        existing = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            # Custom H1
+
+            ## Prep Notes
+
+            prep
+            """
+        )
+        new_render = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Meeting Summary
+
+            Summary text.
+
+            ## Notes
+
+            n
+            """
+        )
+        merged = merge_files(existing, new_render)
+        idx_h1 = merged.index("# Custom H1")
+        idx_summary = merged.index("## Meeting Summary")
+        idx_prep = merged.index("## Prep Notes")
+        self.assertLess(idx_h1, idx_summary)
+        self.assertLess(idx_summary, idx_prep)
+
+    def test_repull_replaces_existing_meeting_summary_in_place(self) -> None:
+        existing = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Meeting Summary
+
+            old summary
+
+            ## Prep Notes
+
+            prep
+            """
+        )
+        new_render = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Meeting Summary
+
+            new summary
+
+            ## Notes
+
+            n
+            """
+        )
+        merged = merge_files(existing, new_render)
+        self.assertIn("new summary", merged)
+        self.assertNotIn("old summary", merged)
+        self.assertIn("prep", merged)
+
+    def test_repull_without_summary_preserves_existing_summary(self) -> None:
+        # Re-pull where the skill couldn't generate a summary (transcript
+        # failed, etc) must NOT blow away the previous summary.
+        existing = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Meeting Summary
+
+            preserved summary
+
+            ## Prep Notes
+
+            prep
+            """
+        )
+        new_render = _dedent(
+            """
+            ---
+            meeting-title: Sync
+            ---
+
+            ## Notes
+
+            n
+            """
+        )
+        merged = merge_files(existing, new_render)
+        self.assertIn("preserved summary", merged)
+
+
 if __name__ == "__main__":
     unittest.main()

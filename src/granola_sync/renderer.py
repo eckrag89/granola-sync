@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Optional
 
 from .models import Meeting
@@ -27,6 +28,7 @@ def render_meeting_note(
     template: Optional[str] = None,
     enhanced_notes: str = "",
     transcript_override: str = "",
+    meeting_summary: str = "",
 ) -> str:
     """Populate a template with meeting data.
 
@@ -36,6 +38,13 @@ def render_meeting_note(
         enhanced_notes: AI-generated summary (from MCP), inserted as-is.
         transcript_override: Pre-formatted transcript text (from MCP).
             When non-empty, used instead of formatting cache transcript entries.
+        meeting_summary: Caller-generated summary (Summary + Key Decisions +
+            Action Items, typically derived from the transcript by the
+            /pull-granola-notes skill). When non-empty, prepended as a
+            ``## Meeting Summary`` section above the first H2 in the body.
+            When empty, no Meeting Summary section is rendered — the template
+            stays clean for cases where transcript-driven generation isn't
+            available (cache-only mode, MCP failure, etc.).
 
     Returns:
         Populated markdown string.
@@ -80,7 +89,24 @@ def render_meeting_note(
     for placeholder, value in replacements.items():
         result = result.replace(placeholder, value)
 
+    if meeting_summary.strip():
+        result = _insert_meeting_summary(result, meeting_summary)
+
     return result
+
+
+def _insert_meeting_summary(rendered: str, content: str) -> str:
+    """Insert ``## Meeting Summary`` immediately before the first H2 in the
+    body, or append it when no H2 exists.
+
+    Doesn't modify frontmatter or H1 preamble — just slots the section in
+    where the merger expects header tool sections to live.
+    """
+    block = f"## Meeting Summary\n\n{content.strip()}\n\n"
+    match = re.search(r"^## ", rendered, re.MULTILINE)
+    if not match:
+        return rendered.rstrip() + "\n\n" + block
+    return rendered[:match.start()] + block + rendered[match.start():]
 
 
 def _participants_yaml_list(names: list[str]) -> str:

@@ -195,11 +195,11 @@ def _load_meeting_from_file(path: str) -> Meeting | None:
     )
 
 
-def _resolve_render_args(args) -> tuple[str, str]:
-    """Resolve enhanced notes and transcript from file or string flags.
+def _resolve_render_args(args) -> tuple[str, str, str]:
+    """Resolve enhanced notes, transcript, and meeting summary inputs.
 
-    File flags take precedence over string flags.
-    Returns (enhanced_notes, transcript_override).
+    File flags take precedence over string flags for fields that have both.
+    Returns ``(enhanced_notes, transcript_override, meeting_summary)``.
     """
     enhanced_notes = args.enhanced_notes
     if hasattr(args, "enhanced_notes_file") and args.enhanced_notes_file:
@@ -211,7 +211,14 @@ def _resolve_render_args(args) -> tuple[str, str]:
     if hasattr(args, "transcript_file") and args.transcript_file:
         transcript_override = _read_transcript_file(args.transcript_file)
 
-    return enhanced_notes, transcript_override
+    meeting_summary = getattr(args, "meeting_summary", "") or ""
+    summary_file = getattr(args, "meeting_summary_file", "") or ""
+    if summary_file:
+        file_content = _read_file_arg(summary_file)
+        if file_content:
+            meeting_summary = file_content
+
+    return enhanced_notes, transcript_override, meeting_summary
 
 
 def _add_render_flags(parser: argparse.ArgumentParser) -> None:
@@ -220,6 +227,19 @@ def _add_render_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--enhanced-notes-file", help="Read AI summary from file (overrides --enhanced-notes)")
     parser.add_argument("--transcript-file", help="Read transcript from file")
     parser.add_argument("--meeting-data", help="JSON file with meeting metadata (MCP-only mode, skips cache)")
+    parser.add_argument(
+        "--meeting-summary",
+        default="",
+        help=(
+            "Caller-generated meeting summary content (Summary + Key Decisions"
+            " + Action Items). Rendered as a ## Meeting Summary section above"
+            " the first existing H2. Omit to skip the section entirely."
+        ),
+    )
+    parser.add_argument(
+        "--meeting-summary-file",
+        help="Read --meeting-summary content from a file (overrides the string flag)",
+    )
     parser.add_argument(
         "--participants",
         help=(
@@ -419,11 +439,12 @@ def _cmd_render(meetings, args) -> int:
     if participants_override:
         _apply_participants_override(meeting, participants_override)
 
-    enhanced_notes, transcript_override = _resolve_render_args(args)
+    enhanced_notes, transcript_override, meeting_summary = _resolve_render_args(args)
     rendered = render_meeting_note(
         meeting,
         enhanced_notes=enhanced_notes,
         transcript_override=transcript_override,
+        meeting_summary=meeting_summary,
     )
 
     if args.output:
@@ -522,11 +543,12 @@ def _cmd_with_meeting_data(args) -> int:
         _apply_participants_override(meeting, participants_override)
 
     if args.command == "render":
-        enhanced_notes, transcript_override = _resolve_render_args(args)
+        enhanced_notes, transcript_override, meeting_summary = _resolve_render_args(args)
         rendered = render_meeting_note(
             meeting,
             enhanced_notes=enhanced_notes,
             transcript_override=transcript_override,
+            meeting_summary=meeting_summary,
         )
         if args.output:
             os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
@@ -592,11 +614,12 @@ def _do_push(meeting: Meeting, args) -> int:
         print(target_path)
         return 0
 
-    enhanced_notes, transcript_override = _resolve_render_args(args)
+    enhanced_notes, transcript_override, meeting_summary = _resolve_render_args(args)
     rendered = render_meeting_note(
         meeting,
         enhanced_notes=enhanced_notes,
         transcript_override=transcript_override,
+        meeting_summary=meeting_summary,
     )
 
     if not args.force and os.path.exists(target_path):
